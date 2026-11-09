@@ -23,10 +23,10 @@ const INDEX = path.join(__dirname, 'index.html');
 if (!BOT_TOKEN) console.warn('ВНИМАНИЕ: не задан BOT_TOKEN. Промокоды и админка работать не будут.');
 
 /* ---------- простая база в файле ---------- */
-let db = { users: {}, promos: {}, withdrawals: {} };
+let db = { users: {}, promos: {}, withdrawals: {}, feed: [] };
 try {
   const d = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  if (d && typeof d === 'object') db = { users: d.users || {}, promos: d.promos || {}, withdrawals: d.withdrawals || {} };
+  if (d && typeof d === 'object') db = { users: d.users || {}, promos: d.promos || {}, withdrawals: d.withdrawals || {}, feed: Array.isArray(d.feed) ? d.feed : [] };
 } catch (e) {}
 let saveTimer = null;
 function save() {
@@ -55,7 +55,7 @@ function checkInit(initData) {
   const a = Buffer.from(calc), b = Buffer.from(hash);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   const age = Date.now() / 1000 - Number(p.get('auth_date') || 0);
-  if (!(age >= 0 && age < 86400)) return null; // подпись не старше 24 часов
+  if (!(age > -300 && age < 259200)) return null; // подпись не старше 3 суток
   try {
     const u = JSON.parse(p.get('user'));
     return u && u.id ? u : null;
@@ -121,16 +121,52 @@ function countOnline() {
   return n;
 }
 const escHtml = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-async function sendPhotoToAdmin(buf, mime, caption) {
-  const fd = new FormData();
-  fd.append('chat_id', ADMIN_ID);
-  fd.append('caption', caption);
-  fd.append('parse_mode', 'HTML');
-  fd.append('photo', new Blob([buf], { type: mime }), mime === 'image/png' ? 'skin.png' : 'skin.jpg');
-  const r = await fetch(TG_API + '/bot' + BOT_TOKEN + '/sendPhoto', { method: 'POST', body: fd, signal: AbortSignal.timeout(20000) });
-  const j = await r.json().catch(() => ({}));
-  if (!j.ok) throw new Error(j.description || ('http ' + r.status));
+const FEED_MIN = 500;
+const feedList = () => db.feed.slice(-20).reverse().map(f => ({ name: f.name, username: f.username, mode: f.mode, amount: f.amount, ts: f.ts }));
+
+/* вызов Telegram Bot API (без внешних библиотек, работает на любой версии Node) */
+function tgCall(method, fields, file) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(TG_API + '/bot' + BOT_TOKEN + '/' + method);
+    const lib = u.protocol === 'http:' ? require('http') : require('https');
+    let body, headers;
+    if (file) {
+      const bd = '----sfe' + crypto.randomBytes(12).toString('hex');
+      const parts = [];
+      for (const [k, v] of Object.entries(fields)) {
+        parts.push(Buffer.from('--' + bd + '\r\nContent-Disposition: form-data; name="' + k + '"\r\n\r\n' + String(v) + '\r\n'));
+      }
+      parts.push(Buffer.from('--' + bd + '\r\nContent-Disposition: form-data; name="' + file.field + '"; filename="' + file.name + '"\r\nContent-Type: ' + file.type + '\r\n\r\n'));
+      parts.push(file.buf);
+      parts.push(Buffer.from('\r\n--' + bd + '--\r\n'));
+      body = Buffer.concat(parts);
+      headers = { 'Content-Type': 'multipart/form-data; boundary=' + bd, 'Content-Length': body.length };
+    } else {
+      body = Buffer.from(JSON.stringify(fields));
+      headers = { 'Content-Type': 'application/json', 'Content-Length': body.length };
+    }
+    const req = lib.request({
+      hostname: u.hostname, port: u.port || (u.protocol === 'http:' ? 80 : 443),
+      path: u.pathname, method: 'POST', headers, timeout: 20000
+    }, res => {
+      const ch = [];
+      res.on('data', c => ch.push(c));
+      res.on('end', () => {
+        let j = null;
+        try { j = JSON.parse(Buffer.concat(ch).toString('utf8')); } catch (e) {}
+        if (j && j.ok) resolve(j);
+        else reject(new Error((j && j.description) || ('HTTP ' + res.statusCode)));
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', e => reject(new Error(e.code || e.message)));
+    req.end(body);
+  });
 }
+const sendPhotoToAdmin = (buf, mime, caption) => tgCall('sendPhoto',
+  { chat_id: ADMIN_ID, caption, parse_mode: 'HTML' },
+  { field: 'photo', name: mime === 'image/png' ? 'skin.png' : 'skin.jpg', type: mime, buf });
+const sendTextToAdmin = text => tgCall('sendMessage', { chat_id: ADMIN_ID, text, parse_mode: 'HTML', disable_web_page_preview: true });
 
 /* ---------- API ---------- */
 async function handleApi(req, res, route) {
@@ -156,12 +192,45 @@ async function handleApi(req, res, route) {
 
   switch (route) {
     case 'me':
-      return send(200, { ok: true, banned: !!me.banned, adjs: me.adjs, isAdmin, online: countOnline() });
+      return send(200, { ok: true, banned: !!me.banned, adjs: me.adjs, isAdmin, online: countOnline(), ver: 5, feed: feedList() });
 
     case 'ack': {
       const ids = Array.isArray(body.ids) ? body.ids.map(String) : [];
       me.adjs = me.adjs.filter(a => !ids.includes(a.id));
       save();
+      return send(200, { ok: true });
+    }
+
+    /* ----- лента выигрышей (бегущая строка) ----- */
+    case 'feed/add': {
+      if (me.banned) return fail(403, 'banned', 'Аккаунт заблокирован');
+      if (!limit(id, 'feed', 20)) return fail(429, 'rate', 'Слишком много запросов');
+      const mode = String(body.mode || '');
+      const amount = Math.trunc(Number(body.amount));
+      if (!['case', 'upgrade', 'mines', 'rocket'].includes(mode) || !Number.isFinite(amount) || amount < FEED_MIN || amount > 1e12) {
+        return fail(400, 'bad', 'Неверные данные');
+      }
+      db.feed.push({ id: rid(), name: (me.nick || me.first_name || 'Игрок').slice(0, 20), username: me.username || '', mode, amount, ts: Date.now() });
+      if (db.feed.length > 100) db.feed = db.feed.slice(-100);
+      save();
+      return send(200, { ok: true, feed: feedList() });
+    }
+
+    /* ----- сообщение создателю в бота ----- */
+    case 'contact': {
+      if (!limit(id, 'contact', 5)) return fail(429, 'rate', 'Слишком много сообщений. Подождите минуту.');
+      const text = String(body.text || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, 800);
+      if (text.length < 2) return fail(400, 'bad', 'Напишите сообщение');
+      const name = me.nick || me.first_name || 'Игрок';
+      const msg = '✉️ <b>Сообщение от игрока</b>\n'
+        + 'Игрок: <a href="tg://user?id=' + id + '">' + escHtml(name) + '</a>' + (me.username ? ' (@' + escHtml(me.username) + ')' : '') + '\n'
+        + 'ID: <code>' + id + '</code>\n\n' + escHtml(text);
+      try {
+        await sendTextToAdmin(msg);
+      } catch (e) {
+        console.error('contact error:', e.message);
+        return fail(502, 'tg', 'Не удалось доставить сообщение. Возможно, создатель ещё не запустил бота. Напишите ему в Telegram напрямую.');
+      }
       return send(200, { ok: true });
     }
 

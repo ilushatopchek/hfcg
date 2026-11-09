@@ -31,8 +31,9 @@ button:disabled{opacity:.55;cursor:not-allowed;filter:none;transform:none}
 .danger{background:#3a1822;color:#ff8da1}
 .actions{display:flex;gap:8px;margin-bottom:16px}
 .actions button{flex:1;padding:11px}
-.tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:14px;margin-bottom:16px;border:1px solid var(--bd)}
-.tabs button{flex:1 0 auto;background:transparent;color:var(--mut);padding:11px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.2px}
+.tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:14px;margin-bottom:16px;border:1px solid var(--bd);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:1 0 auto;background:transparent;color:var(--mut);padding:11px 9px;font-size:12px;text-transform:uppercase;letter-spacing:.2px}
 .tabs button.on{background:linear-gradient(135deg,var(--ac2),#a24bff);color:#fff}
 .sec{display:none}.sec.on{display:block}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
@@ -112,10 +113,31 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--card);border:1px solid var(--ac);color:var(--txt);padding:12px 16px;border-radius:12px;font-weight:700;opacity:0;pointer-events:none;transition:.3s;z-index:20;max-width:90vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .online{font-size:13px;color:var(--mut);margin-top:2px}.online b{color:var(--ok)}
+textarea{width:100%;min-height:110px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--card2);color:var(--txt);font:inherit;font-size:16px;outline:none;resize:vertical}
+textarea:focus{border-color:var(--ac2)}
+.ticker{overflow:hidden;background:var(--card);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;padding:8px 0}
+.tk-track{display:flex;width:max-content;animation:tick var(--d,30s) linear infinite}
+.tk{display:flex;align-items:center;gap:8px;padding:0 16px;white-space:nowrap;border-right:1px solid var(--bd);font-size:13px;line-height:1.2}
+.tk small{color:var(--mut)}.tk b{color:var(--ac)}
+@keyframes tick{to{transform:translateX(-50%)}}
+.rwin{position:relative;overflow:hidden;border-radius:14px;background:var(--card2);padding:12px 0}
+.rwin::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--ac);box-shadow:0 0 12px var(--ac);z-index:2}
+.rwin::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,var(--card2),transparent 18%,transparent 82%,var(--card2))}
+.rstrip{display:flex;gap:8px;will-change:transform}
+.rt{flex:none;width:96px;border-radius:10px;background:var(--card);border-bottom:3px solid var(--c);padding:8px 4px;text-align:center;font-size:12px;font-weight:800}
+.rt .gi{margin:0 auto 4px}
+.rk-box{position:relative;height:220px;border-radius:14px;background:linear-gradient(180deg,#0f1226,#171a2b);border:1px solid var(--bd);overflow:hidden}
+.rk-box canvas{position:absolute;inset:0;width:100%;height:100%}
+.rk-mult{position:absolute;left:0;right:0;top:10px;text-align:center;font-size:40px;font-weight:900;text-shadow:0 2px 12px #000a}
+.rk-mult.ok{color:var(--ok)}.rk-mult.boom{color:var(--bad)}
+.rk-hist{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;min-height:26px;scrollbar-width:none}
+.rk-chip{flex:none;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:800;background:var(--card2)}
+.c-lo{color:var(--bad)}.c-md{color:var(--mut)}.c-hi{color:var(--ok)}
 </style>
 </head>
 <body>
 <div class="wrap">
+<div class="ticker"><div class="tk-track" id="tkTrack"></div></div>
 <header>
   <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">—</b></div></div>
   <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div><span style="color:var(--mut);font-size:13px">gold</span></div>
@@ -130,6 +152,7 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
   <button class="on" data-t="case">Case</button>
   <button data-t="upgrade">Upgrade</button>
   <button data-t="mines">Mines</button>
+  <button data-t="rocket">🚀 Rocket</button>
   <button data-t="top">🏆 Top</button>
   <button data-t="profile">Profile</button>
 </div>
@@ -146,11 +169,14 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
     <label>Ставка (gold, только целые, мин. 1)</label>
     <div class="f"><input id="bet" inputmode="numeric" value="10">
       <button data-b="half">½</button><button data-b="x2">x2</button><button data-b="max">MAX</button></div>
-    <label>Шанс (%) — от 0.1 до 75</label>
+    <label>Выбранный шанс (%) — от 0.1 до 75</label>
     <div class="f"><input id="pct" inputmode="decimal" value="50"></div>
     <input type="range" id="rng" min="0.1" max="75" step="0.1" value="50">
+    <div class="info"><span>Реальный шанс победы</span><b id="realp">33.33%</b></div>
     <div class="info"><span>Множитель</span><b id="mul">x2.00</b></div>
+    <div class="info"><span>Комиссия 20%</span><b id="fee">—</b></div>
     <div class="info"><span>Выигрыш</span><b id="win">20</b></div>
+    <div class="hint" style="margin-top:8px">Реальный шанс победы в 1,5 раза ниже выбранного. С выигрыша удерживается комиссия 20%.</div>
     <div class="err" id="uerr"></div>
     <button class="pri" id="go" style="width:100%;margin-top:8px;padding:14px;font-size:17px">Апгрейд</button>
   </div>
@@ -175,6 +201,26 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
     <button class="pri" id="mstart" style="width:100%;margin-top:8px;padding:14px;font-size:17px">Играть</button>
     <button class="gold" id="mcashout" style="width:100%;margin-top:8px;padding:14px;font-size:17px" hidden>Забрать</button>
     <div class="hint" style="margin-top:10px">Ставка списывается при старте. Откройте хотя бы одну ячейку, чтобы забрать выигрыш. Множитель учитывает комиссию 3%.</div>
+  </div>
+</div></section>
+
+<section class="sec" id="rocket"><div class="up">
+  <div class="panel">
+    <div class="rk-hist" id="rkHist"></div>
+    <div class="rk-box"><canvas id="rkCv"></canvas><div class="rk-mult" id="rkMult">x1.00</div></div>
+    <div class="msg" id="rkMsg"></div>
+  </div>
+  <div class="panel">
+    <label>Ставка (gold, только целые, мин. 1)</label>
+    <div class="f"><input id="rbet" inputmode="numeric" value="10">
+      <button data-rb="half">½</button><button data-rb="x2">x2</button><button data-rb="max">MAX</button></div>
+    <label>Автовывод на множителе x (необязательно, от 1.01)</label>
+    <div class="f"><input id="rauto" inputmode="decimal" placeholder="например 2.5"></div>
+    <div class="info"><span>Забрать сейчас</span><b id="rkCashNow">0 gold</b></div>
+    <div class="err" id="rkErr"></div>
+    <button class="pri" id="rkStart" style="width:100%;margin-top:8px;padding:14px;font-size:17px">🚀 Запуск</button>
+    <button class="gold" id="rkCashBtn" style="width:100%;margin-top:8px;padding:14px;font-size:17px" hidden>Забрать</button>
+    <div class="hint" style="margin-top:10px">Ракета взрывается в случайный момент. Успейте нажать «Забрать» раньше. Множитель считается с комиссией 5%.</div>
   </div>
 </div></section>
 
@@ -255,8 +301,8 @@ const digits=s=>{s=String(s).replace(/\D/g,'').slice(0,15);return s?Number(s):0}
 const pcts=c=>{const t=c.items.reduce((a,i)=>a+i.w,0);return c.items.map(i=>i.w/t*100)};
 
 /* ============ СОХРАНЕНИЕ ВСЕГО ============ */
-let bal=1000,freeLast=0,resetLast=0,pct=50,tab='case',pend=0,betSaved='10',nick='',mg=null,mbetSaved='10',mbombSaved='3',banned=false,appliedAdj=[],wd=null;
-let st={cases:0,ups:0,upWins:0,best:0,added:0,withdrawn:0,mines:0,joined:Date.now()};
+let bal=1000,freeLast=0,resetLast=0,pct=50,tab='case',pend=0,betSaved='10',nick='',mg=null,mbetSaved='10',mbombSaved='3',banned=false,appliedAdj=[],wd=null,rk=null,rkh=[],feed=[],feedSig='',rbetSaved='10',rautoSaved='';
+let st={cases:0,ups:0,upWins:0,best:0,added:0,withdrawn:0,mines:0,rockets:0,joined:Date.now()};
 const num=v=>Number.isFinite(v)&&v>=0?Math.floor(v):0;
 try{
   let r=null;
@@ -269,7 +315,7 @@ try{
     if(Number.isFinite(r.free)&&r.free>0)freeLast=r.free;
     if(Number.isFinite(r.reset)&&r.reset>0)resetLast=r.reset;
     if(Number.isFinite(r.pct))pct=Math.min(75,Math.max(0.1,r.pct));
-    if(['upgrade','mines','top','profile'].includes(r.tab))tab=r.tab;
+    if(['upgrade','mines','rocket','top','profile'].includes(r.tab))tab=r.tab;
     if(Number.isFinite(r.pend)&&r.pend>0)pend=Math.floor(r.pend);
     if(/^\d{1,15}$/.test(String(r.bet||'')))betSaved=String(r.bet);
     if(typeof r.nick==='string')nick=r.nick.slice(0,20);
@@ -278,6 +324,12 @@ try{
     if(r.ban===true)banned=true;
     if(r.wd&&/^[a-f0-9]{12}$/.test(String(r.wd.id))&&Number.isFinite(r.wd.amount)&&r.wd.amount>=1)wd={id:r.wd.id,amount:Math.floor(r.wd.amount)};
     if(Array.isArray(r.adj))appliedAdj=r.adj.filter(x=>typeof x==='string').slice(-300);
+    const kk=r.rk;
+    if(kk&&typeof kk==='object'&&Number.isFinite(kk.bet)&&kk.bet>=1&&Number.isFinite(kk.crash)&&kk.crash>=1&&kk.crash<=1000&&Number.isFinite(kk.start))
+      rk={bet:Math.floor(kk.bet),crash:kk.crash,start:kk.start,auto:Number.isFinite(kk.auto)&&kk.auto>=1.01?kk.auto:0,done:!!kk.done,res:kk.res==='win'?'win':'lose',payout:num(kk.payout),mult:Number.isFinite(kk.mult)?kk.mult:0};
+    if(Array.isArray(r.rkh))rkh=r.rkh.filter(x=>Number.isFinite(x)).slice(-12);
+    if(/^\d{1,15}$/.test(String(r.rbet||'')))rbetSaved=String(r.rbet);
+    if(typeof r.rauto==='string'&&/^[\d.,]{0,8}$/.test(r.rauto))rautoSaved=r.rauto;
     const g=r.mg;
     if(g&&typeof g==='object'&&Number.isFinite(g.bet)&&g.bet>=1&&Number.isInteger(g.bombs)&&g.bombs>=1&&g.bombs<=24
       &&Array.isArray(g.pos)&&g.pos.length===g.bombs&&g.pos.every(x=>Number.isInteger(x)&&x>=0&&x<25)&&new Set(g.pos).size===g.bombs
@@ -285,13 +337,13 @@ try{
       mg={bet:Math.floor(g.bet),bombs:g.bombs,pos:g.pos,open:g.open,done:!!g.done,hit:Number.isInteger(g.hit)?g.hit:-1};
     if(r.st&&typeof r.st==='object'){
       st.cases=num(r.st.cases);st.ups=num(r.st.ups);st.upWins=num(r.st.upWins);
-      st.best=num(r.st.best);st.mines=num(r.st.mines);st.added=num(r.st.added);st.withdrawn=num(r.st.withdrawn);
+      st.best=num(r.st.best);st.mines=num(r.st.mines);st.rockets=num(r.st.rockets);st.added=num(r.st.added);st.withdrawn=num(r.st.withdrawn);
       if(Number.isFinite(r.st.joined)&&r.st.joined>0)st.joined=r.st.joined;
     }
   }
 }catch(e){}
 function save(){
-  try{localStorage.setItem(KEY,JSON.stringify({bal,free:freeLast,reset:resetLast,pct,tab,pend,bet:$('bet').value,mbet:$('mbet').value,mbomb:$('mbomb').value,mg,ban:banned,adj:appliedAdj,wd,nick,st}))}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify({bal,free:freeLast,reset:resetLast,pct,tab,pend,bet:$('bet').value,mbet:$('mbet').value,mbomb:$('mbomb').value,mg,ban:banned,adj:appliedAdj,wd,rk,rkh,rbet:$('rbet').value,rauto:$('rauto').value,nick,st}))}catch(e){}
   if(tab==='profile')renderProfile();
 }
 function setBal(v){
@@ -307,7 +359,9 @@ function setTab(t){
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id===t));
   save();
+  try{const ab=document.querySelector('.tabs button.on');if(ab&&ab.scrollIntoView)ab.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}
   if(t==='top')loadTop();
+  if(t==='rocket')rkRedraw();
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
 
@@ -365,7 +419,7 @@ function openTg(text){
   if(text)$('cpy').onclick=()=>{copyText(text);$('cpy').textContent='✅ Скопировано'};
   if(tgApp&&tgApp.openTelegramLink)$('tgOpen').onclick=e=>{e.preventDefault();try{tgApp.openTelegramLink(web)}catch(x){window.open(web,'_blank')}};
 }
-$('contactBtn').onclick=()=>openTg('');
+$('contactBtn').onclick=()=>contactModal();
 
 /* ---------- ВЫВОД: заявка + фото выставленного скина ---------- */
 function compressImg(file){
@@ -427,9 +481,11 @@ function wdInstr(){
   <div id="wdPrev" style="text-align:center;margin-top:8px"></div>
   <div class="err" id="wdMsg"></div>
   <div class="row" style="margin-top:10px"><button class="danger" id="wdCancel">Отменить вывод</button><button class="gold" id="wdSend" disabled>Отправить фото</button></div>
+  <button id="wdTg" style="width:100%;margin-top:8px">✈️ Не получается? Написать создателю</button>
   <button data-x style="width:100%;margin-top:8px">Закрыть (продолжить позже)</button>`);
   const say=(t,ok)=>{const el=$('wdMsg');if(el){el.style.color=ok?'var(--ok)':'';el.textContent=t}};
   const lock=l=>{if($('wdSend'))$('wdSend').disabled=l||!wdImg;if($('wdCancel'))$('wdCancel').disabled=l};
+  $('wdTg').onclick=()=>openTg('Заявка на вывод '+wd.amount+' gold. Скин выставлен за '+wd.amount+'.04');
   $('wdFile').onchange=async e=>{
     const f=e.target.files&&e.target.files[0];
     if(!f)return;
@@ -474,7 +530,7 @@ $('wdBtn').onclick=()=>{if(wd)wdInstr();else wdForm()};
 function pName(){return nick||(tgUser&&(tgUser.first_name||tgUser.username))||'Игрок'}
 function renderProfile(){
   const name=pName();
-  const games=st.cases+st.ups+st.mines;
+  const games=st.cases+st.ups+st.mines+st.rockets;
   const lvl=Math.floor(Math.sqrt(games))+1;
   const from=(lvl-1)*(lvl-1),to=lvl*lvl;
   const prog=Math.min(100,Math.round((games-from)/(to-from)*100));
@@ -501,7 +557,8 @@ function renderProfile(){
     <div class="stat"><b>${fmt(st.upWins)}</b><span>Успешных апгрейдов</span></div>
     <div class="stat"><b>${fmt(st.withdrawn)}</b><span>Выведено gold</span></div>
     <div class="stat"><b>${fmt(st.mines)}</b><span>Игр в Mines</span></div>
-    <div class="stat" style="grid-column:1/-1"><b>${days}</b><span>дн. в игре</span></div>
+    <div class="stat"><b>${fmt(st.rockets)}</b><span>Игр в Rocket</span></div>
+    <div class="stat"><b>${days}</b><span>дн. в игре</span></div>
   </div>
   <div class="pact">
     <button class="gold" id="promoBtn">🎟 Промокоды</button>
@@ -520,7 +577,7 @@ function renderProfile(){
     $('nickOk').onclick=()=>{nick=$('nickIn').value.trim().slice(0,20);$('modal').classList.remove('on');save()};
   };
   $('resetBtn').onclick=()=>{
-    if(busy||ubusy||mActive())return;
+    if(busy||ubusy||mActive()||rkActive())return;
     const left=resetLeft();
     if(left>0){
       show(`<div class="res"><div class="big">⏳</div><p>Сбросить прогресс можно раз в 12 часов.<br>Следующий сброс через <b style="color:var(--ac)">${fmtTime(left)}</b></p></div><button data-x style="width:100%">Закрыть</button>`);
@@ -529,12 +586,12 @@ function renderProfile(){
     show(`<div class="res"><div class="big">⚠️</div><p>Баланс, статистика и ник будут удалены. Это нельзя отменить.<br><br>Следующий сброс будет доступен только через 12 часов.</p></div>
     <div class="row"><button data-x>Отмена</button><button class="danger" id="rstOk">Удалить</button></div>`);
     $('rstOk').onclick=()=>{
-      if(busy||ubusy||mActive()||resetLeft()>0)return;
+      if(busy||ubusy||mActive()||rkActive()||resetLeft()>0)return;
       resetLast=Date.now();
-      bal=1000;pct=50;pend=0;nick='';mg=null;
-      st={cases:0,ups:0,upWins:0,best:0,added:0,withdrawn:0,mines:0,joined:Date.now()};
+      bal=1000;pct=50;pend=0;nick='';mg=null;rk=null;rkh=[];
+      st={cases:0,ups:0,upWins:0,best:0,added:0,withdrawn:0,mines:0,rockets:0,joined:Date.now()};
       $('bet').value='10';$('pct').value=50;$('rng').value=50;
-      $('mbet').value='10';$('mbomb').value='3';$('mrng').value=3;$('mmsg').textContent='';mDraw();mInfo();
+      $('mbet').value='10';$('mbomb').value='3';$('mrng').value=3;$('mmsg').textContent='';mDraw();mInfo();$('rbet').value='10';$('rauto').value='';$('rkMsg').textContent='';rkHistDraw();rkUI(1);rkRedraw();
       drawDial();updateFree();$('modal').classList.remove('on');setBal(bal);
     };
   };
@@ -585,24 +642,38 @@ function openCase(c){
   st.cases++;
   if(c.free){freeLast=Date.now();updateFree();setBal(bal)}
   else setBal(bal-c.price);
-  let n=0;
-  show(`<div class="res"><div class="big spin" id="rl">❓</div><p>Открываем…</p></div>`,true);
-  const t=setInterval(()=>{
-    $('rl').innerHTML=itemImg(c.items[Math.floor(Math.random()*c.items.length)].v,110);
-    if(++n>16){
-      clearInterval(t);
-      pend=0;
-      if(win.v>st.best)st.best=win.v;
-      setBal(bal+win.v);
-      busy=false;
-      const plus=win.v>=c.price;
-      show(`<div class="res"><div class="big">${itemImg(win.v,130)}</div><h3 style="color:${win.c};margin:4px 0">Gold</h3>
-      <div class="amt">+${fmt(win.v)} gold</div>
-      <p style="color:${plus?'var(--ok)':'var(--mut)'}">${c.free?'Приходи за новым кейсом через 24 часа!':plus?'В плюсе!':'Повезёт в следующий раз'}</p></div>
-      <div class="row"><button data-x>Закрыть</button>${c.free?'':`<button class="pri" id="again">Ещё раз (${fmt(c.price)})</button>`}</div>`);
-      if(!c.free)$('again').onclick=()=>openCase(c);
-    }
-  },110);
+  const items=c.items,TW=96,GAP=8,STEP=TW+GAP,N=60,WI=48;
+  const strip=[];
+  for(let i=0;i<N;i++){
+    if(i===WI){strip.push(win);continue}
+    let r2=Math.random()*100,j=0;
+    for(;j<p.length-1;j++){if(r2<p[j])break;r2-=p[j]}
+    strip.push(items[j]);
+  }
+  show(`<h3 style="margin:0 0 8px;text-align:center">${c.ic} ${esc(c.name)}</h3>
+  <div class="rwin" id="rwin"><div class="rstrip" id="rstrip">${strip.map(it=>`<div class="rt" style="--c:${it.c}">${itemImg(it.v,56)}<span>${fmt(it.v)} gold</span></div>`).join('')}</div></div>
+  <p style="text-align:center;color:var(--mut);margin:8px 0 0">Крутим…</p>`,true);
+  const rs=$('rstrip'),rw=$('rwin');
+  requestAnimationFrame(()=>{
+    const W=rw.clientWidth,off=WI*STEP+TW/2-W/2+(Math.random()-.5)*TW*.6;
+    rs.style.transition='none';rs.style.transform='translateX(0)';
+    void rs.offsetWidth;
+    rs.style.transition='transform 5.5s cubic-bezier(.08,.6,.12,1)';
+    rs.style.transform='translateX('+(-off)+'px)';
+  });
+  setTimeout(()=>{
+    pend=0;
+    if(win.v>st.best)st.best=win.v;
+    setBal(bal+win.v);
+    busy=false;
+    feedPost('case',win.v);
+    const plus=win.v>=c.price;
+    show(`<div class="res"><div class="big">${itemImg(win.v,130)}</div><h3 style="color:${win.c};margin:4px 0">Gold</h3>
+    <div class="amt">+${fmt(win.v)} gold</div>
+    <p style="color:${plus?'var(--ok)':'var(--mut)'}">${c.free?'Приходи за новым кейсом через 24 часа!':plus?'В плюсе!':'Повезёт в следующий раз'}</p></div>
+    <div class="row"><button data-x>Закрыть</button>${c.free?'':`<button class="pri" id="again">Ещё раз (${fmt(c.price)})</button>`}</div>`);
+    if(!c.free)$('again').onclick=()=>openCase(c);
+  },5800);
 }
 function show(h,lock){
   $('mbox').innerHTML=h;
@@ -616,16 +687,23 @@ $('modal').onclick=e=>{
 
 /* ---------- апгрейдер ---------- */
 let rot=0,ubusy=false;
-const calcWin=(b,p)=>Math.max(b+1,Math.floor(b*100/p));
+const UP_LUCK=1.5,UP_FEE=0.2; // реальный шанс = выбранный / 1.5; комиссия 20% с выигрыша
+const realPct=p=>p/UP_LUCK;
+function upCalc(b,p){
+  const gross=Math.floor(b*100/p),fee=Math.floor(gross*UP_FEE);
+  const net=Math.max(b+1,gross-fee);
+  return{gross,fee:Math.max(0,gross-net),net};
+}
+const calcWin=(b,p)=>upCalc(b,p).net;
 function getBet(){return digits($('bet').value)}
 function lockUp(l){
   ['bet','pct','rng'].forEach(id=>$(id).disabled=l);
   document.querySelectorAll('[data-b]').forEach(b=>b.disabled=l);
 }
 function drawDial(){
-  const d=pct*3.6;
+  const rp=realPct(pct),d=rp*3.6;
   $('dial').style.background=`conic-gradient(var(--ok) 0deg ${d}deg,#2b2f4d ${d}deg 360deg)`;
-  $('pc').textContent=(+pct.toFixed(1))+'%';
+  $('pc').textContent=(+rp.toFixed(2))+'%';
   $('mx').textContent='x'+(100/pct).toFixed(2);
 }
 function refresh(){
@@ -635,9 +713,12 @@ function refresh(){
   else if(b>bal)err='Ставка больше баланса';
   $('uerr').textContent=ubusy?'':err;
   $('mul').textContent='x'+(100/pct).toFixed(2);
-  $('win').textContent=b>=1?fmt(calcWin(b,pct))+' gold':'—';
+  $('realp').textContent=(+realPct(pct).toFixed(2))+'%';
+  const uc=upCalc(Math.max(1,b),pct);
+  $('fee').textContent=b>=1?'−'+fmt(uc.fee)+' gold':'—';
+  $('win').textContent=b>=1?fmt(uc.net)+' gold':'—';
   $('go').disabled=ubusy||busy||!!err;
-  mRefresh();
+  mRefresh();rkRefresh();
 }
 function setPct(v){
   if(ubusy)return;
@@ -670,12 +751,12 @@ $('go').onclick=()=>{
   lockUp(true);
   $('go').disabled=true;
   $('umsg').textContent='';$('umsg').className='msg';
-  const ok=Math.random()*100<pct,d=pct*3.6,curPct=pct;
+  const rp=realPct(pct),ok=Math.random()*100<rp,d=rp*3.6,curPct=pct;
   const payout=ok?calcWin(b,curPct):0;
   pend=payout;
   st.ups++;
   setBal(bal-b);
-  const ang=ok?Math.random()*(d-6)+3:d+3+Math.random()*(360-d-6);
+  const mg2=Math.min(3,d/4),ang=ok?mg2+Math.random()*(d-2*mg2):d+mg2+Math.random()*(360-d-2*mg2);
   rot=Math.ceil(rot/360)*360+360*5+ang;
   $('needle').style.transform=`rotate(${rot}deg)`;
   setTimeout(()=>{
@@ -686,8 +767,9 @@ $('go').onclick=()=>{
       st.upWins++;
       if(payout>st.best)st.best=payout;
       setBal(bal+payout);
+      feedPost('upgrade',payout);
       $('umsg').className='msg w';
-      $('umsg').textContent=`Победа! +${fmt(payout)} gold`;
+      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 20%)`;
     }else{
       setBal(bal);
       $('umsg').className='msg l';
@@ -762,6 +844,7 @@ function mCash(){
   mg.done=true;
   if(pay>st.best)st.best=pay;
   setBal(bal+pay);
+  feedPost('mines',pay);
   $('mmsg').className='msg w';
   $('mmsg').innerHTML=`Победа! +${fmt(pay)} gold<small>Множитель x${mMult(mg.bombs,k).toFixed(2)}</small>`;
   mDraw();mInfo();
@@ -817,7 +900,10 @@ async function api(route,body){
   catch(e){throw{code:'offline'}}
   let j=null;try{j=await res.json()}catch(e){}
   if(!j)throw{code:'offline'};
-  if(!res.ok)throw{code:j.error||('http_'+res.status),msg:j.message};
+  if(!res.ok){
+    if(j.error==='nf'&&j.message==='Неизвестный запрос')throw{code:'old',msg:'Сервер устарел: загрузите новый server.js в GitHub и нажмите Redeploy в SnapDeploy.'};
+    throw{code:j.error||('http_'+res.status),msg:j.message};
+  }
   return j;
 }
 const errText=e=>e&&e.msg?e.msg:({no_tg:'Откройте игру через Telegram-бота. Вне Telegram это не работает.',offline:'Нет связи с сервером. Игра должна быть запущена через ваш сервер.'}[e&&e.code]||'Ошибка'+(e&&e.code?': '+e.code:''));
@@ -842,6 +928,7 @@ async function sync(){
     const r=await api('me',{bal,nick});
     setBanned(!!r.banned);
     if(Number.isFinite(r.online))$('onl').textContent=r.online;
+    if(r.feed)setFeed(r.feed);
     if(r.adjs&&r.adjs.length)applyAdjs(r.adjs);
   }catch(e){}
   syncing=false;
@@ -986,15 +1073,202 @@ async function loadTop(){
   }
 }
 
+/* ---------- ЛЕНТА ВЫИГРЫШЕЙ (бегущая строка сверху) ---------- */
+const FEED_MIN=500;
+const MODE_NAME={case:'Case',upgrade:'Upgrade',mines:'Mines',rocket:'Rocket'},MODE_ICO={case:'📦',upgrade:'⬆️',mines:'💣',rocket:'🚀'};
+function renderTicker(){
+  const tr=$('tkTrack');if(!tr)return;
+  if(!feed.length){tr.style.animation='none';tr.innerHTML='<div class="tk" style="border:0">🏆 Здесь появятся выигрыши игроков</div>';return}
+  const one=feed.map(f=>`<div class="tk">${itemImg(f.amount,26)}<span>${f.username?'@'+esc(f.username):esc(f.name)}<small> · ${MODE_ICO[f.mode]||''} ${esc(MODE_NAME[f.mode]||f.mode)} · </small><b>+${fmt(f.amount)} gold</b></span></div>`).join('');
+  tr.style.animation='';
+  tr.style.setProperty('--d',Math.max(20,feed.length*6)+'s');
+  tr.innerHTML=one+one;
+}
+function setFeed(l){
+  if(!Array.isArray(l))return;
+  const clean=l.filter(f=>f&&Number.isFinite(f.amount)&&f.amount>0).map(f=>({name:String(f.name||'Игрок'),username:String(f.username||''),mode:String(f.mode||''),amount:Math.floor(f.amount)}));
+  const sig=JSON.stringify(clean);
+  if(sig===feedSig)return;
+  feedSig=sig;feed=clean;renderTicker();
+}
+function feedPost(mode,amount){
+  if(!(amount>=FEED_MIN)||!tgApp||!tgApp.initData)return;
+  api('feed/add',{mode,amount}).then(r=>{if(r&&r.feed)setFeed(r.feed)}).catch(()=>{});
+}
+
+/* ---------- СВЯЗЬ С СОЗДАТЕЛЕМ (сообщение приходит в бота) ---------- */
+function contactModal(){
+  show(`<h3 style="margin-top:0">✉️ Связь с создателем</h3>
+  <p style="color:var(--mut);margin:0 0 8px">Напишите сообщение: оно придёт создателю прямо в бота. Ответ вы получите в Telegram.</p>
+  <textarea id="ctTxt" maxlength="800" placeholder="Ваш вопрос или проблема…"></textarea>
+  <div class="err" id="ctMsg"></div>
+  <div class="row" style="margin-top:10px"><button data-x>Закрыть</button><button class="tg" id="ctSend">Отправить</button></div>
+  <button id="ctOpen" style="width:100%;margin-top:8px">Открыть чат с @${TG_USER}</button>`);
+  const say=(t,ok)=>{const el=$('ctMsg');if(el){el.style.color=ok?'var(--ok)':'';el.textContent=t}};
+  $('ctOpen').onclick=()=>openTg('');
+  $('ctSend').onclick=async()=>{
+    const text=$('ctTxt').value.trim();
+    if(text.length<2){say('Напишите сообщение');return}
+    $('ctSend').disabled=true;say('Отправка…',true);
+    try{await api('contact',{text});say('✅ Отправлено! Создатель ответит вам в Telegram.',true);if($('ctTxt'))$('ctTxt').value=''}
+    catch(e){say(errText(e))}
+    if($('ctSend'))$('ctSend').disabled=false;
+  };
+}
+
+/* ---------- ROCKET ---------- */
+const RK_RATE=0.15,RK_RTP=95; // рост x = e^(0.15*t), возврат 95%
+const rkMultAt=t=>Math.floor(Math.exp(RK_RATE*Math.max(0,t))*100)/100;
+const rkTimeFor=m=>Math.log(m)/RK_RATE;
+const rkGenCrash=()=>Math.min(1000,Math.max(1,Math.floor(RK_RTP/(1-Math.random()))/100));
+const rkActive=()=>!!(rk&&!rk.done);
+const rkBet=()=>digits($('rbet').value);
+function rkAuto(){const v=parseFloat(String($('rauto').value).replace(',','.'));return v>=1.01?Math.min(v,1000):0}
+let rkRaf=0;
+function rkRefresh(){
+  const b=rkBet(),act=rkActive();let err='';
+  if(!act){if(b<1)err='Минимальная ставка — 1 gold';else if(b>bal)err='Ставка больше баланса'}
+  $('rkErr').textContent=err;
+  $('rkStart').disabled=act||!!err;
+}
+function rkUI(m){
+  const act=rkActive();
+  $('rkStart').hidden=act;$('rkCashBtn').hidden=!act;
+  ['rbet','rauto'].forEach(id=>$(id).disabled=act);
+  document.querySelectorAll('[data-rb]').forEach(b=>b.disabled=act);
+  if(act){
+    const mm=m||1,pay=Math.floor(rk.bet*mm);
+    $('rkCashNow').textContent=fmt(pay)+' gold';
+    $('rkCashBtn').textContent='💰 Забрать '+fmt(pay)+' gold (x'+mm.toFixed(2)+')';
+  }else $('rkCashNow').textContent='0 gold';
+  rkRefresh();
+}
+function rkHistDraw(){
+  const el=$('rkHist');if(!el)return;
+  el.innerHTML=rkh.slice().reverse().map(c=>`<span class="rk-chip ${c<2?'c-lo':c<5?'c-md':'c-hi'}">x${c.toFixed(2)}</span>`).join('')||'<span class="puser">Здесь будут последние взрывы</span>';
+}
+function rkDraw(t,m,boom){
+  const cv=$('rkCv');if(!cv)return;
+  const box=cv.parentElement,W=box.clientWidth,H=box.clientHeight;
+  if(W<10||H<10)return;
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
+  const x=cv.getContext('2d');
+  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
+  const pad=16,pw=W-pad*2,ph=H-pad*2-26;
+  x.strokeStyle='rgba(255,255,255,.07)';x.lineWidth=1;
+  for(let i=1;i<5;i++){const yy=pad+26+ph*i/5;x.beginPath();x.moveTo(pad,yy);x.lineTo(W-pad,yy);x.stroke()}
+  const tmax=Math.max(6,t*1.2),mmax=Math.max(2,m*1.25);
+  const X=tt=>pad+pw*Math.min(1,tt/tmax),Y=mm=>pad+26+ph-ph*(mm-1)/(mmax-1);
+  let ex=pad,ey=pad+26+ph,px=ex,py=ey;
+  if(t>0){
+    const col=boom?'#ff5470':'#38d98a',pts=[];
+    for(let i=0;i<=60;i++){const tt=t*i/60;pts.push([X(tt),Y(Math.exp(RK_RATE*tt))])}
+    x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));
+    x.strokeStyle=col;x.lineWidth=3;x.stroke();
+    x.lineTo(pts[pts.length-1][0],pad+26+ph);x.lineTo(pad,pad+26+ph);x.closePath();
+    const g=x.createLinearGradient(0,pad,0,H);g.addColorStop(0,boom?'rgba(255,84,112,.25)':'rgba(56,217,138,.25)');g.addColorStop(1,'rgba(0,0,0,0)');
+    x.fillStyle=g;x.fill();
+    ex=pts[pts.length-1][0];ey=pts[pts.length-1][1];
+    const pp=pts[Math.max(0,pts.length-4)];px=pp[0];py=pp[1];
+  }
+  x.save();x.translate(ex,ey);
+  if(boom){x.font='48px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('💥',0,0)}
+  else{x.rotate((Math.atan2(ey-py,ex-px)||-Math.PI/4)+Math.PI/4);x.font='30px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🚀',0,0)}
+  x.restore();
+}
+function rkRedraw(){
+  if(rkActive())return; // кадры рисует цикл
+  if(rk&&rk.done){
+    if(rk.res==='win'){$('rkMult').textContent='x'+rk.mult.toFixed(2);$('rkMult').className='rk-mult ok';rkDraw(rkTimeFor(rk.mult),rk.mult,false)}
+    else{$('rkMult').textContent='x'+rk.crash.toFixed(2);$('rkMult').className='rk-mult boom';rkDraw(rkTimeFor(rk.crash),rk.crash,true)}
+  }else rkDraw(0,1,false);
+}
+function rkTick(){
+  cancelAnimationFrame(rkRaf);
+  if(!rkActive())return;
+  const t=(Date.now()-rk.start)/1000;
+  if(rk.auto>=1.01&&rk.auto<rk.crash&&t>=rkTimeFor(rk.auto)){rkCash(rk.auto);return}
+  if(t>=rkTimeFor(rk.crash)){rkBoom();return}
+  const m=Math.min(rkMultAt(t),rk.crash);
+  $('rkMult').textContent='x'+m.toFixed(2);$('rkMult').className='rk-mult';
+  rkDraw(t,m,false);
+  rkUI(m);
+  rkRaf=requestAnimationFrame(rkTick);
+}
+function rkStart(){
+  if(rkActive())return;
+  const bet=rkBet();
+  if(bet<1||bet>bal)return;
+  rk={bet,crash:rkGenCrash(),start:Date.now(),auto:rkAuto(),done:false,res:'',payout:0,mult:0};
+  st.rockets++;
+  $('rkMsg').className='msg';
+  $('rkMsg').textContent='Ракета взлетает! Заберите выигрыш до взрыва.';
+  setBal(bal-bet);
+  rkUI(1);rkTick();
+}
+function rkCash(mo){
+  if(!rkActive())return;
+  let m=mo;
+  if(!m){
+    const t=(Date.now()-rk.start)/1000;
+    if(t>=rkTimeFor(rk.crash)){rkBoom();return}
+    m=rkMultAt(t);
+  }
+  const pay=Math.max(rk.bet,Math.floor(rk.bet*m));
+  cancelAnimationFrame(rkRaf);
+  rk.done=true;rk.res='win';rk.payout=pay;rk.mult=m;
+  rkh.push(rk.crash);rkh=rkh.slice(-12);
+  if(pay>st.best)st.best=pay;
+  setBal(bal+pay);
+  feedPost('rocket',pay);
+  $('rkMult').textContent='x'+m.toFixed(2);$('rkMult').className='rk-mult ok';
+  $('rkMsg').className='msg w';
+  $('rkMsg').innerHTML=`Забрали! +${fmt(pay)} gold<small>x${m.toFixed(2)} · ракета взорвалась бы на x${rk.crash.toFixed(2)}</small>`;
+  rkDraw(rkTimeFor(m),m,false);
+  rkHistDraw();rkUI(1);
+  if(tab!=='rocket')toast('🚀 Ракета: +'+fmt(pay)+' gold (x'+m.toFixed(2)+')');
+}
+function rkBoom(){
+  if(!rkActive())return;
+  cancelAnimationFrame(rkRaf);
+  rk.done=true;rk.res='lose';rk.payout=0;rk.mult=rk.crash;
+  rkh.push(rk.crash);rkh=rkh.slice(-12);
+  save();
+  $('rkMult').textContent='x'+rk.crash.toFixed(2);$('rkMult').className='rk-mult boom';
+  $('rkMsg').className='msg l';
+  $('rkMsg').innerHTML=`💥 Ракета взорвалась на x${rk.crash.toFixed(2)}!<small>−${fmt(rk.bet)} gold · Повезёт в следующий раз!</small>`;
+  rkDraw(rkTimeFor(rk.crash),rk.crash,true);
+  rkHistDraw();rkUI(1);
+  if(tab!=='rocket')toast('💥 Ракета взорвалась на x'+rk.crash.toFixed(2));
+}
+function rkInit(){
+  rkHistDraw();
+  if(rkActive()){rkUI(1);rkTick()}
+  else{rkUI(1);rkRedraw()}
+}
+$('rkStart').onclick=rkStart;
+$('rkCashBtn').onclick=()=>rkCash();
+$('rbet').oninput=e=>{if(rkActive())return;e.target.value=e.target.value.replace(/\D/g,'').slice(0,15);rkRefresh();save()};
+$('rauto').oninput=e=>{if(rkActive())return;e.target.value=e.target.value.replace(/[^\d.,]/g,'').slice(0,8);save()};
+document.querySelectorAll('[data-rb]').forEach(b=>b.onclick=()=>{
+  if(rkActive())return;
+  let v=rkBet(),k=b.dataset.rb;
+  v=k==='half'?Math.max(1,Math.floor(v/2)):k==='x2'?Math.max(1,v*2):Math.max(1,bal);
+  $('rbet').value=Math.min(v,999999999999999);
+  rkRefresh();save();
+});
+
 /* ---------- запуск ---------- */
 $('bet').value=betSaved;
 $('pct').value=pct;
 $('rng').value=pct;
 $('ban').classList.toggle('on',banned);
 $('mbet').value=mbetSaved;$('mbomb').value=mbombSaved;$('mrng').value=mbombSaved;
+$('rbet').value=rbetSaved;$('rauto').value=rautoSaved;
 renderCases();
 drawDial();
-mDraw();mInfo();
+mDraw();mInfo();rkInit();renderTicker();
 setTab(tab);
 if(pend>0){
   const got=pend;pend=0;
