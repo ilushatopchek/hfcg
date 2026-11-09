@@ -32,7 +32,7 @@ button:disabled{opacity:.55;cursor:not-allowed;filter:none;transform:none}
 .actions{display:flex;gap:8px;margin-bottom:16px}
 .actions button{flex:1;padding:11px}
 .tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:14px;margin-bottom:16px;border:1px solid var(--bd)}
-.tabs button{flex:1;background:transparent;color:var(--mut);padding:11px 2px;font-size:13px;text-transform:uppercase;letter-spacing:.3px}
+.tabs button{flex:1 0 auto;background:transparent;color:var(--mut);padding:11px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.2px}
 .tabs button.on{background:linear-gradient(135deg,var(--ac2),#a24bff);color:#fff}
 .sec{display:none}.sec.on{display:block}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
@@ -111,15 +111,14 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
 .ban.on{display:flex}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--card);border:1px solid var(--ac);color:var(--txt);padding:12px 16px;border-radius:12px;font-weight:700;opacity:0;pointer-events:none;transition:.3s;z-index:20;max-width:90vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.online{font-size:13px;color:var(--mut);margin-top:2px}.online b{color:var(--ok)}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <div class="logo"><b>STANDFADE</b><span>earn</span></div>
-  <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div>
-    <input id="add" inputmode="numeric" placeholder="Сколько gold">
-    <button class="gold" id="addBtn">+ Добавить</button></div>
+  <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">—</b></div></div>
+  <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div><span style="color:var(--mut);font-size:13px">gold</span></div>
 </header>
 
 <div class="actions">
@@ -131,6 +130,7 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
   <button class="on" data-t="case">Case</button>
   <button data-t="upgrade">Upgrade</button>
   <button data-t="mines">Mines</button>
+  <button data-t="top">🏆 Top</button>
   <button data-t="profile">Profile</button>
 </div>
 
@@ -178,6 +178,8 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac2);margin-top:8px}
   </div>
 </div></section>
 
+<section class="sec" id="top"><div id="topBox"></div></section>
+
 <section class="sec" id="profile"><div id="profBox"></div></section>
 </div>
 
@@ -216,60 +218,35 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 
 /* ============ КЕЙСЫ ============
    price — цена, v — сколько gold дает предмет, w — шанс (в %, сумма = 100) */
+/* обычный кейс: 5 предметов, шансы 40/30/20/8/2 %, цены предметов = цена кейса x 0.25 / 0.75 / 1.5 / 4 / 10 */
+const COLS=['#8b90b3','#4db8ff','#7c5cff','#ff6bd6','#ffc83d'];
+const MULT=[0.25,0.75,1.5,4,10],WTS=[40.5,30,20,8,1.5];
+const mkCase=(id,name,ic,price)=>({id,name,ic,price,items:MULT.map((m,i)=>({n:'Gold',v:Math.round(price*m),w:WTS[i],c:COLS[i]}))});
+/* ВСЁ ИЛИ НИЧЕГО: 95% -> 50 gold, 5% -> в 7 раз дороже кейса */
+const mkAllIn=price=>({id:'a'+price,name:'Всё или ничего',tag:'ALL-IN',ic:'🎰',price,items:[{n:'Gold',v:50,w:95,c:'#8b90b3'},{n:'Gold',v:price*7,w:5,c:'#ffc83d'}]});
 const CASES=[
  {id:'free',name:'Бесплатный',tag:'FREE',free:true,ic:'🎁',price:0,items:[
-  {n:'Пыль',v:20,w:45,c:'#8b90b3'},
-  {n:'Монетка',v:60,w:30,c:'#4db8ff'},
-  {n:'Кристалл',v:150,w:17,c:'#7c5cff'},
-  {n:'Корона',v:500,w:7,c:'#ff6bd6'},
-  {n:'Дракон',v:2000,w:1,c:'#ffc83d'}]},
-
- {id:'c1',name:'Starter',ic:'📦',price:200,items:[
-  {n:'Пыль',v:50,w:40,c:'#8b90b3'},
-  {n:'Монетка',v:150,w:30,c:'#4db8ff'},
-  {n:'Кристалл',v:300,w:20,c:'#7c5cff'},
-  {n:'Корона',v:800,w:8,c:'#ff6bd6'},
-  {n:'Дракон',v:2000,w:2,c:'#ffc83d'}]},
-
- {id:'c2',name:'Medium',ic:'🎁',price:1000,items:[
-  {n:'Свиток',v:250,w:40,c:'#8b90b3'},
-  {n:'Меч',v:750,w:30,c:'#4db8ff'},
-  {n:'Щит',v:1500,w:20,c:'#7c5cff'},
-  {n:'Алмаз',v:4000,w:8,c:'#ff6bd6'},
-  {n:'Феникс',v:10000,w:2,c:'#ffc83d'}]},
-
- {id:'c3',name:'Pro',ic:'💼',price:5000,items:[
-  {n:'Руда',v:1250,w:40,c:'#8b90b3'},
-  {n:'Слиток',v:3750,w:30,c:'#4db8ff'},
-  {n:'Артефакт',v:7500,w:20,c:'#7c5cff'},
-  {n:'Звезда',v:20000,w:8,c:'#ff6bd6'},
-  {n:'Комета',v:50000,w:2,c:'#ffc83d'}]},
-
- {id:'c4',name:'Elite',ic:'🏅',price:15000,items:[
-  {n:'Серебро',v:3750,w:40,c:'#8b90b3'},
-  {n:'Золото',v:11250,w:30,c:'#4db8ff'},
-  {n:'Рубин',v:22500,w:20,c:'#7c5cff'},
-  {n:'Трон',v:60000,w:8,c:'#ff6bd6'},
-  {n:'Замок',v:150000,w:2,c:'#ffc83d'}]},
-
- {id:'c5',name:'Legend',ic:'🏆',price:50000,items:[
-  {n:'Слиток',v:12500,w:40,c:'#8b90b3'},
-  {n:'Сокровище',v:37500,w:30,c:'#4db8ff'},
-  {n:'Артефакт',v:75000,w:20,c:'#7c5cff'},
-  {n:'Планета',v:200000,w:8,c:'#ff6bd6'},
-  {n:'Вселенная',v:500000,w:2,c:'#ffc83d'}]},
-
- {id:'a1',name:'Всё или ничего',tag:'ALL-IN',ic:'🎰',price:1000,items:[
-  {n:'Утешение',v:50,w:95,c:'#8b90b3'},
-  {n:'ДЖЕКПОТ x7',v:7000,w:5,c:'#ffc83d'}]},
-
- {id:'a2',name:'Всё или ничего',tag:'ALL-IN',ic:'🎰',price:5000,items:[
-  {n:'Утешение',v:50,w:95,c:'#8b90b3'},
-  {n:'ДЖЕКПОТ x7',v:35000,w:5,c:'#ffc83d'}]},
-
- {id:'a3',name:'Всё или ничего',tag:'ALL-IN',ic:'🎰',price:10000,items:[
-  {n:'Утешение',v:50,w:95,c:'#8b90b3'},
-  {n:'ДЖЕКПОТ x7',v:70000,w:5,c:'#ffc83d'}]}
+  {n:'Gold',v:20,w:45.5,c:'#8b90b3'},
+  {n:'Gold',v:60,w:30,c:'#4db8ff'},
+  {n:'Gold',v:150,w:17,c:'#7c5cff'},
+  {n:'Gold',v:500,w:7,c:'#ff6bd6'},
+  {n:'Gold',v:2000,w:0.5,c:'#ffc83d'}]},
+ mkCase('c200','Starter','📦',200),
+ mkCase('c400','Bronze','🥉',400),
+ mkCase('c800','Silver','🥈',800),
+ mkCase('c1000','Medium','🎁',1000),
+ mkCase('c2500','Platinum','💍',2500),
+ mkCase('c5000','Pro','💼',5000),
+ mkCase('c10000','Diamond','💎',10000),
+ mkCase('c15000','Elite','🏅',15000),
+ mkCase('c25000','Royal','👑',25000),
+ mkCase('c50000','Legend','🏆',50000),
+ mkAllIn(500),
+ mkAllIn(1000),
+ mkAllIn(2500),
+ mkAllIn(5000),
+ mkAllIn(10000),
+ mkAllIn(25000)
 ];
 
 const $=id=>document.getElementById(id);
@@ -278,7 +255,7 @@ const digits=s=>{s=String(s).replace(/\D/g,'').slice(0,15);return s?Number(s):0}
 const pcts=c=>{const t=c.items.reduce((a,i)=>a+i.w,0);return c.items.map(i=>i.w/t*100)};
 
 /* ============ СОХРАНЕНИЕ ВСЕГО ============ */
-let bal=1000,freeLast=0,resetLast=0,pct=50,tab='case',pend=0,betSaved='10',nick='',mg=null,mbetSaved='10',mbombSaved='3',banned=false,appliedAdj=[];
+let bal=1000,freeLast=0,resetLast=0,pct=50,tab='case',pend=0,betSaved='10',nick='',mg=null,mbetSaved='10',mbombSaved='3',banned=false,appliedAdj=[],wd=null;
 let st={cases:0,ups:0,upWins:0,best:0,added:0,withdrawn:0,mines:0,joined:Date.now()};
 const num=v=>Number.isFinite(v)&&v>=0?Math.floor(v):0;
 try{
@@ -292,13 +269,14 @@ try{
     if(Number.isFinite(r.free)&&r.free>0)freeLast=r.free;
     if(Number.isFinite(r.reset)&&r.reset>0)resetLast=r.reset;
     if(Number.isFinite(r.pct))pct=Math.min(75,Math.max(0.1,r.pct));
-    if(['upgrade','mines','profile'].includes(r.tab))tab=r.tab;
+    if(['upgrade','mines','top','profile'].includes(r.tab))tab=r.tab;
     if(Number.isFinite(r.pend)&&r.pend>0)pend=Math.floor(r.pend);
     if(/^\d{1,15}$/.test(String(r.bet||'')))betSaved=String(r.bet);
     if(typeof r.nick==='string')nick=r.nick.slice(0,20);
     if(/^\d{1,15}$/.test(String(r.mbet||'')))mbetSaved=String(r.mbet);
     if(/^\d{1,2}$/.test(String(r.mbomb||''))&&r.mbomb>=1&&r.mbomb<=24)mbombSaved=String(r.mbomb);
     if(r.ban===true)banned=true;
+    if(r.wd&&/^[a-f0-9]{12}$/.test(String(r.wd.id))&&Number.isFinite(r.wd.amount)&&r.wd.amount>=1)wd={id:r.wd.id,amount:Math.floor(r.wd.amount)};
     if(Array.isArray(r.adj))appliedAdj=r.adj.filter(x=>typeof x==='string').slice(-300);
     const g=r.mg;
     if(g&&typeof g==='object'&&Number.isFinite(g.bet)&&g.bet>=1&&Number.isInteger(g.bombs)&&g.bombs>=1&&g.bombs<=24
@@ -313,7 +291,7 @@ try{
   }
 }catch(e){}
 function save(){
-  try{localStorage.setItem(KEY,JSON.stringify({bal,free:freeLast,reset:resetLast,pct,tab,pend,bet:$('bet').value,mbet:$('mbet').value,mbomb:$('mbomb').value,mg,ban:banned,adj:appliedAdj,nick,st}))}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify({bal,free:freeLast,reset:resetLast,pct,tab,pend,bet:$('bet').value,mbet:$('mbet').value,mbomb:$('mbomb').value,mg,ban:banned,adj:appliedAdj,wd,nick,st}))}catch(e){}
   if(tab==='profile')renderProfile();
 }
 function setBal(v){
@@ -329,20 +307,11 @@ function setTab(t){
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id===t));
   save();
+  if(t==='top')loadTop();
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
 
-/* ---------- добавить gold ---------- */
-function addGold(){
-  const n=digits($('add').value);
-  if(n<1){$('add').focus();return}
-  st.added+=n;
-  setBal(bal+n);
-  $('add').value='';
-}
-$('addBtn').onclick=addGold;
-$('add').oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,15);
-$('add').onkeydown=e=>{if(e.key==='Enter')addGold()};
+
 
 /* ---------- таймеры ---------- */
 function leftMs(last,cd){
@@ -398,25 +367,108 @@ function openTg(text){
 }
 $('contactBtn').onclick=()=>openTg('');
 
-$('wdBtn').onclick=()=>{
+/* ---------- ВЫВОД: заявка + фото выставленного скина ---------- */
+function compressImg(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      try{
+        let w=img.naturalWidth,h=img.naturalHeight;
+        if(!w||!h)throw new Error('size');
+        const k=Math.min(1,1600/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg',0.85));
+      }catch(e){URL.revokeObjectURL(url);reject(e)}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('img'))};
+    img.src=url;
+  });
+}
+function wdLost(){ // сервер не знает про заявку (например, был перезапущен): возвращаем gold
+  const amt=wd?wd.amount:0;
+  wd=null;
+  st.withdrawn=Math.max(0,st.withdrawn-amt);
+  setBal(bal+amt);
+  show(`<div class="res"><div class="big">↩️</div><p>Заявка не найдена на сервере.<br>${fmt(amt)} gold возвращены на баланс. Попробуйте оформить вывод заново.</p></div><button data-x style="width:100%">Ок</button>`);
+}
+function wdForm(){
   show(`<h3 style="margin-top:0">💸 Вывод gold</h3>
   <p style="color:var(--mut);margin:0 0 4px">Минимальный вывод — ${fmt(MIN_WITHDRAW)} gold.<br>Ваш баланс: <b style="color:var(--ac)">${fmt(bal)}</b></p>
   <label>Сумма вывода (целое число)</label>
   <input id="wdAmt" inputmode="numeric" placeholder="от ${MIN_WITHDRAW}">
   <div class="err" id="wdErr"></div>
-  <div class="row" style="margin-top:10px"><button data-x>Отмена</button><button class="gold" id="wdGo">Вывести</button></div>`);
+  <div class="row" style="margin-top:10px"><button data-x>Отмена</button><button class="gold" id="wdGo">Продолжить</button></div>`);
   const inp=$('wdAmt');
-  inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,15);$('wdErr').textContent=''};
-  $('wdGo').onclick=()=>{
+  const say=t=>{const el=$('wdErr');if(el)el.textContent=t};
+  inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,15);say('')};
+  $('wdGo').onclick=async()=>{
     const n=digits(inp.value);
-    if(n<MIN_WITHDRAW){$('wdErr').textContent='Минимум для вывода — '+fmt(MIN_WITHDRAW)+' gold';return}
-    if(n>bal){$('wdErr').textContent='Недостаточно gold на балансе';return}
-    st.withdrawn+=n;
-    setBal(bal-n);
-    const who=tgUser?(tgUser.username?'@'+tgUser.username:tgUser.first_name)+' (id '+tgUser.id+')':pName();
-    openTg('Здравствуйте! Хочу вывести '+n+' gold (STANDFADE earn). Игрок: '+who);
+    if(n<MIN_WITHDRAW){say('Минимум для вывода — '+fmt(MIN_WITHDRAW)+' gold');return}
+    if(n>bal){say('Недостаточно gold на балансе');return}
+    $('wdGo').disabled=true;
+    try{
+      const r=await api('withdraw/create',{amount:n});
+      wd={id:r.id,amount:r.amount};
+      if(!r.existing){st.withdrawn+=r.amount;setBal(bal-r.amount)}else save();
+      wdInstr();
+    }catch(e){say(errText(e));if($('wdGo'))$('wdGo').disabled=false}
   };
-};
+}
+let wdImg=null;
+function wdInstr(){
+  if(!wd){wdForm();return}
+  wdImg=null;
+  show(`<h3 style="margin-top:0">💸 Вывод ${fmt(wd.amount)} gold</h3>
+  <div class="item" style="--c:#ffc83d"><span class="n" style="font-size:16px">Выставьте скин за <b style="color:var(--ac);font-size:20px">${wd.amount}.04</b> и скиньте фото выставленного предмета</span></div>
+  <label>Фото выставленного предмета</label>
+  <input type="file" id="wdFile" accept="image/*">
+  <div id="wdPrev" style="text-align:center;margin-top:8px"></div>
+  <div class="err" id="wdMsg"></div>
+  <div class="row" style="margin-top:10px"><button class="danger" id="wdCancel">Отменить вывод</button><button class="gold" id="wdSend" disabled>Отправить фото</button></div>
+  <button data-x style="width:100%;margin-top:8px">Закрыть (продолжить позже)</button>`);
+  const say=(t,ok)=>{const el=$('wdMsg');if(el){el.style.color=ok?'var(--ok)':'';el.textContent=t}};
+  const lock=l=>{if($('wdSend'))$('wdSend').disabled=l||!wdImg;if($('wdCancel'))$('wdCancel').disabled=l};
+  $('wdFile').onchange=async e=>{
+    const f=e.target.files&&e.target.files[0];
+    if(!f)return;
+    say('Обработка фото…',true);
+    try{
+      wdImg=await compressImg(f);
+      $('wdPrev').innerHTML=`<img src="${wdImg}" alt="" style="max-width:100%;max-height:220px;border-radius:12px">`;
+      say('');lock(false);
+    }catch(err){wdImg=null;lock(false);say('Не удалось прочитать фото. Выберите другое изображение.')}
+  };
+  $('wdSend').onclick=async()=>{
+    if(!wdImg||!wd)return;
+    lock(true);say('Отправка…',true);
+    try{
+      await api('withdraw/photo',{id:wd.id,image:wdImg});
+      const amt=wd.amount;wd=null;wdImg=null;save();
+      show(`<div class="res"><div class="big">✅</div><p>Фото отправлено создателю.<br>Заявка на вывод <b style="color:var(--ac)">${fmt(amt)} gold</b> принята, ожидайте.</p></div><button data-x style="width:100%">Ок</button>`);
+    }catch(e){
+      if(e&&e.code==='nf'){wdLost()}
+      else if(e&&e.code==='done'){wd=null;wdImg=null;save();say('Фото по этой заявке уже отправлено.',true)}
+      else{say(errText(e));lock(false)}
+    }
+  };
+  $('wdCancel').onclick=async()=>{
+    lock(true);say('Отмена…',true);
+    try{
+      const r=await api('withdraw/cancel',{id:wd.id});
+      const amt=wd.amount;wd=null;wdImg=null;
+      st.withdrawn=Math.max(0,st.withdrawn-amt);
+      applyAdjs([r.adj],true);
+      save();
+      show(`<div class="res"><div class="big">↩️</div><p>Вывод отменён.<br>${fmt(amt)} gold возвращены на баланс.</p></div><button data-x style="width:100%">Ок</button>`);
+    }catch(e){
+      if(e&&e.code==='nf'){wdLost()}
+      else{say(errText(e));lock(false)}
+    }
+  };
+}
+$('wdBtn').onclick=()=>{if(wd)wdInstr();else wdForm()};
 
 /* ---------- профиль ---------- */
 function pName(){return nick||(tgUser&&(tgUser.first_name||tgUser.username))||'Игрок'}
@@ -447,10 +499,9 @@ function renderProfile(){
     <div class="stat"><b>${fmt(st.ups)}</b><span>Апгрейдов</span></div>
     <div class="stat"><b>${wr}%</b><span>Побед в апгрейде</span></div>
     <div class="stat"><b>${fmt(st.upWins)}</b><span>Успешных апгрейдов</span></div>
-    <div class="stat"><b>${fmt(st.added)}</b><span>Добавлено gold</span></div>
     <div class="stat"><b>${fmt(st.withdrawn)}</b><span>Выведено gold</span></div>
     <div class="stat"><b>${fmt(st.mines)}</b><span>Игр в Mines</span></div>
-    <div class="stat"><b>${days}</b><span>дн. в игре</span></div>
+    <div class="stat" style="grid-column:1/-1"><b>${days}</b><span>дн. в игре</span></div>
   </div>
   <div class="pact">
     <button class="gold" id="promoBtn">🎟 Промокоды</button>
@@ -788,13 +839,14 @@ async function sync(){
   if(syncing||!tgApp||!tgApp.initData)return;
   syncing=true;
   try{
-    const r=await api('me',{bal});
+    const r=await api('me',{bal,nick});
     setBanned(!!r.banned);
+    if(Number.isFinite(r.online))$('onl').textContent=r.online;
     if(r.adjs&&r.adjs.length)applyAdjs(r.adjs);
   }catch(e){}
   syncing=false;
 }
-setInterval(sync,60000);
+setInterval(sync,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
 
 function promoModal(){
@@ -914,6 +966,24 @@ function adminModal(){
       }
     }catch(er){say('auMsg',errText(er));b.disabled=false}
   };
+}
+
+/* ---------- ЛИДЕРБОРД ---------- */
+async function loadTop(){
+  const box=$('topBox');if(!box)return;
+  box.innerHTML='<div class="pcard"><div class="puser">Загрузка…</div></div>';
+  try{
+    const r=await api('leaderboard',{bal,nick});
+    const medal=['🥇','🥈','🥉'];
+    box.innerHTML=`<div class="pcard"><h3 style="margin:0 0 4px">🏆 Лидерборд</h3><div class="puser">Топ игроков по балансу gold</div></div>
+    <div style="margin-top:12px">${r.top.length?r.top.map((u,i)=>`<div class="item" style="--c:${u.me?'#7c5cff':i<3?'#ffc83d':'#2a2f4d'}"><span class="e" style="font-size:20px;font-weight:900">${medal[i]||(i+1)}</span><span class="n">${esc(u.name)}${u.me?'<small>это вы</small>':''}</span><span class="p">${fmt(u.bal)} gold</span></div>`).join(''):'<div class="puser" style="text-align:center">Пока никого нет</div>'}</div>
+    <div class="item" style="--c:#7c5cff;margin-top:12px"><span class="n">Ваше место<small>из ${fmt(r.me.total)} игроков</small></span><span class="p">${r.me.rank?'#'+r.me.rank:'—'}<i>${fmt(r.me.bal)} gold</i></span></div>
+    <button id="topRef" style="width:100%;margin-top:10px">🔄 Обновить</button>`;
+    $('topRef').onclick=loadTop;
+  }catch(e){
+    box.innerHTML=`<div class="pcard"><div class="big" style="font-size:56px">🏆</div><p>${esc(errText(e))}</p><button class="pri" id="topRetry">Повторить</button></div>`;
+    $('topRetry').onclick=loadTop;
+  }
 }
 
 /* ---------- запуск ---------- */
