@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -224,7 +224,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
 <div class="wrap">
 <div class="ticker"><div class="tk-track" id="tkTrack"></div></div>
 <header>
-  <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">—</b></div></div>
+  <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">--</b></div></div>
   <div class="hr">
     <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div></div>
     <button class="ib gold" id="wdBtn" aria-label="Вывести"><span>💸</span><small>Вывод</small></button>
@@ -257,7 +257,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
     <div class="chips">
       <div class="chip"><span>Шанс победы</span><b id="realp">33.33%</b></div>
       <div class="chip"><span>Множитель</span><b id="mul">x2.00</b></div>
-      <div class="chip"><span>Комиссия</span><b id="fee">—</b></div>
+      <div class="chip"><span>Комиссия</span><b id="fee">--</b></div>
       <div class="chip"><span>Выигрыш</span><b id="win">20</b></div>
     </div>
     <div class="hint">Реальный шанс победы в 1,5 раза ниже выбранного · с выигрыша комиссия 20%</div>
@@ -278,7 +278,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
     <div class="chips c3">
       <div class="chip"><span>Сейчас</span><b id="mcur">x1.00</b></div>
       <div class="chip"><span>Забрать</span><b id="mcash">0 gold</b></div>
-      <div class="chip"><span>Следующая</span><b id="mnext">—</b></div>
+      <div class="chip"><span>Следующая</span><b id="mnext">--</b></div>
     </div>
     <div class="err" id="merr"></div>
     <button class="pri" id="mstart" style="width:100%;padding:11px;font-size:16px">Играть</button>
@@ -347,7 +347,7 @@ const KEY='sfe_state_v2'+(tgUser?'_'+tgUser.id:'');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ============ КЕЙСЫ ============
-   price — цена, v — сколько gold дает предмет, w — шанс (в %, сумма = 100) */
+   price -- цена, v -- сколько gold дает предмет, w -- шанс (в %, сумма = 100) */
 /* обычный кейс: 5 предметов, шансы 40/30/20/8/2 %, цены предметов = цена кейса x 0.25 / 0.75 / 1.5 / 4 / 10 */
 const COLS=['#8b90b3','#4db8ff','#7c5cff','#ff6bd6','#ffc83d'];
 const MULT=[0.25,0.75,1.5,4,10],WTS=[40.5,30,20,8,1.5];
@@ -534,7 +534,7 @@ function wdLost(){ // сервер не знает про заявку (напр
 }
 function wdForm(){
   show(`<h3 style="margin-top:0">💸 Вывод gold</h3>
-  <p style="color:var(--mut);margin:0 0 4px">Минимальный вывод — ${fmt(MIN_WITHDRAW)} gold.<br>Ваш баланс: <b style="color:var(--ac)">${fmt(bal)}</b></p>
+  <p style="color:var(--mut);margin:0 0 4px">Минимальный вывод -- ${fmt(MIN_WITHDRAW)} gold.<br>Ваш баланс: <b style="color:var(--ac)">${fmt(bal)}</b></p>
   <label>Сумма вывода (целое число)</label>
   <input id="wdAmt" inputmode="numeric" placeholder="от ${MIN_WITHDRAW}">
   <div class="err" id="wdErr"></div>
@@ -544,7 +544,7 @@ function wdForm(){
   inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,15);say('')};
   $('wdGo').onclick=async()=>{
     const n=digits(inp.value);
-    if(n<MIN_WITHDRAW){say('Минимум для вывода — '+fmt(MIN_WITHDRAW)+' gold');return}
+    if(n<MIN_WITHDRAW){say('Минимум для вывода -- '+fmt(MIN_WITHDRAW)+' gold');return}
     if(n>bal){say('Недостаточно gold на балансе');return}
     $('wdGo').disabled=true;
     try{
@@ -698,7 +698,7 @@ $('cases').onclick=e=>{
 };
 function viewCase(c){
   const p=pcts(c);
-  show(`<h3 style="margin-top:0">${c.ic} ${c.name} — ${c.free?'бесплатно':fmt(c.price)+' gold'}</h3>`+
+  show(`<h3 style="margin-top:0">${c.ic} ${c.name} -- ${c.free?'бесплатно':fmt(c.price)+' gold'}</h3>`+
   (c.free?`<p style="color:var(--mut);margin:0">Можно открывать раз в 24 часа.</p>`:'')+
   c.items.map((i,k)=>`<div class="item" style="--c:${i.c}"><span class="e">${itemImg(i.v,44)}</span><span class="n">Gold</span>
   <span class="p">${fmt(i.v)} gold<i>${+p[k].toFixed(2)}%</i></span></div>`).join('')+
@@ -772,7 +772,7 @@ $('modal').onclick=e=>{
 
 /* ---------- апгрейдер ---------- */
 let rot=0,ubusy=false;
-const UP_LUCK=1.5,UP_FEE=0.2; // реальный шанс = выбранный / 1.5; комиссия 20% с выигрыша
+const UP_LUCK=1.0,UP_FEE=0.1; // реальный шанс = выбранный / 1; комиссия 10% с выигрыша
 const realPct=p=>p/UP_LUCK;
 function upCalc(b,p){
   const gross=Math.floor(b*100/p),fee=Math.floor(gross*UP_FEE);
@@ -794,14 +794,14 @@ function drawDial(){
 function refresh(){
   const b=getBet();
   let err='';
-  if(b<1)err='Минимальная ставка — 1 gold';
+  if(b<1)err='Минимальная ставка -- 1 gold';
   else if(b>bal)err='Ставка больше баланса';
   $('uerr').textContent=ubusy?'':err;
   $('mul').textContent='x'+(100/pct).toFixed(2);
   $('realp').textContent=(+realPct(pct).toFixed(2))+'%';
   const uc=upCalc(Math.max(1,b),pct);
-  $('fee').textContent=b>=1?'−'+fmt(uc.fee)+' gold':'—';
-  $('win').textContent=b>=1?fmt(uc.net)+' gold':'—';
+  $('fee').textContent=b>=1?'−'+fmt(uc.fee)+' gold':'--';
+  $('win').textContent=b>=1?fmt(uc.net)+' gold':'--';
   $('go').disabled=ubusy||busy||!!err;
   mRefresh();rkRefresh();
 }
@@ -854,7 +854,7 @@ $('go').onclick=()=>{
       setBal(bal+payout);
       feedPost('upgrade',payout);
       $('umsg').className='msg w';
-      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 20%)`;
+      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 10%)`;
     }else{
       setBal(bal);
       $('umsg').className='msg l';
@@ -873,7 +873,7 @@ function mBombs(){const v=digits($('mbomb').value);return Math.min(24,Math.max(1
 function mSetBombs(v){v=Math.min(24,Math.max(1,v));$('mbomb').value=v;$('mrng').value=v;mInfo();save()}
 function mRefresh(){
   const b=mBet(),act=mActive();let err='';
-  if(!act){if(b<1)err='Минимальная ставка — 1 gold';else if(b>bal)err='Ставка больше баланса'}
+  if(!act){if(b<1)err='Минимальная ставка -- 1 gold';else if(b>bal)err='Ставка больше баланса'}
   $('merr').textContent=err;
   $('mstart').disabled=act||busy||!!err;
 }
@@ -895,7 +895,7 @@ function mInfo(){
     const cur=mMult(mg.bombs,k),cash=k?mPay(mg.bet,mg.bombs,k):0,left=MN-mg.bombs-k;
     $('mcur').textContent='x'+cur.toFixed(2);
     $('mcash').textContent=fmt(cash)+' gold';
-    $('mnext').textContent=left>0?'x'+mMult(mg.bombs,k+1).toFixed(2)+' ('+fmt(mPay(mg.bet,mg.bombs,k+1))+' gold)':'—';
+    $('mnext').textContent=left>0?'x'+mMult(mg.bombs,k+1).toFixed(2)+' ('+fmt(mPay(mg.bet,mg.bombs,k+1))+' gold)':'--';
     $('mcashout').disabled=k===0;
     $('mcashout').textContent=k?'💰 Забрать '+fmt(cash)+' gold (x'+cur.toFixed(2)+')':'Откройте ячейку';
   }else{
@@ -974,7 +974,7 @@ document.querySelectorAll('[data-mb]').forEach(b=>b.onclick=()=>{
 /* ---------- СЕРВЕР: промокоды, бан, админка ---------- */
 const API_BASE='';            // пусто = сервер на том же адресе, что и игра
 const ADMIN_ID=8231559792;    // главный админ (проверка на самом сервере, здесь только для показа кнопки)
-const fmtDate=ts=>ts?new Date(ts).toLocaleString('ru-RU'):'—';
+const fmtDate=ts=>ts?new Date(ts).toLocaleString('ru-RU'):'--';
 let toastT=null;
 function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),4500)}
 async function api(route,body){
@@ -1105,7 +1105,7 @@ function adminModal(){
     if(!cur){el.innerHTML='';return}
     el.innerHTML=`<div class="item" style="--c:${cur.banned?'#ff5470':'#38d98a'}"><span class="n">${esc(cur.first_name||'Игрок')}
       <small>${cur.username?'@'+esc(cur.username)+' · ':''}ID ${esc(cur.id)}</small>
-      <small>Баланс (по данным устройства): ${cur.bal==null?'—':fmt(cur.bal)} gold</small>
+      <small>Баланс (по данным устройства): ${cur.bal==null?'--':fmt(cur.bal)} gold</small>
       <small>Был(а) в игре: ${fmtDate(cur.lastSeen)}</small>
       <small>${cur.banned?'⛔ Забанен':'Активен'}${cur.pending?' · ждёт начислений: '+cur.pending:''}</small></span></div>
     <label>Сумма gold (целое число)</label>
@@ -1149,7 +1149,7 @@ async function loadTop(){
     const medal=['🥇','🥈','🥉'];
     box.innerHTML=`<div class="pcard"><h3 style="margin:0 0 4px">🏆 Лидерборд</h3><div class="puser">Топ игроков по балансу gold</div></div>
     <div style="margin-top:12px">${r.top.length?r.top.map((u,i)=>`<div class="item" style="--c:${u.me?'#7c5cff':i<3?'#ffc83d':'#2a2f4d'}"><span class="e" style="font-size:20px;font-weight:900">${medal[i]||(i+1)}</span><span class="n">${esc(u.name)}${u.me?'<small>это вы</small>':''}</span><span class="p">${fmt(u.bal)} gold</span></div>`).join(''):'<div class="puser" style="text-align:center">Пока никого нет</div>'}</div>
-    <div class="item" style="--c:#7c5cff;margin-top:12px"><span class="n">Ваше место<small>из ${fmt(r.me.total)} игроков</small></span><span class="p">${r.me.rank?'#'+r.me.rank:'—'}<i>${fmt(r.me.bal)} gold</i></span></div>
+    <div class="item" style="--c:#7c5cff;margin-top:12px"><span class="n">Ваше место<small>из ${fmt(r.me.total)} игроков</small></span><span class="p">${r.me.rank?'#'+r.me.rank:'--'}<i>${fmt(r.me.bal)} gold</i></span></div>
     <button id="topRef" style="width:100%;margin-top:10px">🔄 Обновить</button>`;
     $('topRef').onclick=loadTop;
   }catch(e){
@@ -1212,7 +1212,7 @@ function rkAuto(){const v=parseFloat(String($('rauto').value).replace(',','.'));
 let rkRaf=0;
 function rkRefresh(){
   const b=rkBet(),act=rkActive();let err='';
-  if(!act){if(b<1)err='Минимальная ставка — 1 gold';else if(b>bal)err='Ставка больше баланса'}
+  if(!act){if(b<1)err='Минимальная ставка -- 1 gold';else if(b>bal)err='Ставка больше баланса'}
   $('rkErr').textContent=err;
   $('rkStart').disabled=act||!!err;
 }
@@ -1371,4 +1371,4 @@ if(pend>0){
 sync();
 </script>
 </body>
-</html>
+</html>l
