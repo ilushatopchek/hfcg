@@ -6,7 +6,7 @@
 <title>STANDFADE earn</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root{--bg:#0d0f1a;--card:#171a2b;--card2:#1f2338;--txt:#eef0ff;--mut:#8b90b3;--ac:#ffc83d;--ac2:#7c5cff;--ok:#38d98a;--bad:#ff5470;--bd:#2a2f4d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#0d0f1a;--card:#171a2b;--card2:#1f2338;--txt:#eef0ff;--mut:#8b90b3;--ac:#ffc83d;--ac2:#7c5cff;--ok:#38d98a;--bad:#ff5470;--bd:#2a2f4d;box-sizing:border-box}
 *{box-sizing:border-box}
 html{color-scheme:dark}
 body{margin:0;background:radial-gradient(900px 500px at 80% -10%,#2a1f5e55,transparent),var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
@@ -133,6 +133,91 @@ textarea:focus{border-color:var(--ac2)}
 .rk-hist{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;min-height:26px;scrollbar-width:none}
 .rk-chip{flex:none;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:800;background:var(--card2)}
 .c-lo{color:var(--bad)}.c-md{color:var(--mut)}.c-hi{color:var(--ok)}
+
+/* ===== компактная раскладка: всё помещается на экране без прокрутки ===== */
+html,body{height:100%;overflow:hidden}
+body{min-height:0;margin:0}
+.wrap{max-width:560px;margin:0 auto;height:var(--app-h,100dvh);display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom))}
+.ticker{flex:none;margin-bottom:8px;padding:5px 0;border-radius:12px}
+.tk{font-size:12px;padding:0 12px;gap:6px}
+.tk .gi{width:20px!important;height:20px!important}
+header{flex:none;display:flex;flex-wrap:nowrap;gap:8px;margin-bottom:8px;align-items:center;justify-content:space-between}
+.logo{font-size:18px;letter-spacing:.5px;line-height:1.1}
+.online{font-size:11px;margin-top:1px}
+.hr{display:flex;gap:6px;align-items:center}
+.bal{padding:5px 10px;border-radius:12px;gap:6px;flex-wrap:nowrap}
+.bal .v{font-size:16px;min-width:0}
+.coin{width:18px;height:18px}
+.ib{width:46px;height:40px;padding:0;flex:none;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1}
+.ib span{font-size:16px}.ib small{font-size:9px;font-weight:800}
+.tabs{flex:none;margin-bottom:8px;padding:4px}
+.tabs button{padding:8px 9px}
+#view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.sec.game.on{display:flex;flex-direction:column;gap:6px;height:100%}
+.gv{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
+.gv.col{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px}
+.game .msg{flex:none;height:40px;margin:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;font-size:14px;line-height:1.2}
+.game .msg small{font-size:12px}
+.gc{flex:none;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:8px 10px}
+.fl{font-size:11px;color:var(--mut);margin:4px 0 2px}
+.gc .f input{padding:8px 10px}
+.gc .f button{padding:8px 10px}
+.gc .f input[type=range]{padding:0;margin:0;flex:1;min-width:0}
+.chips{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:6px}
+.chips.c3{grid-template-columns:repeat(3,1fr)}
+.chip{background:var(--card2);border-radius:10px;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.chip b{color:var(--ac);font-size:13px;text-align:right;word-break:break-word}
+.chips.c3 .chip{flex-direction:column;justify-content:center;text-align:center;gap:1px}
+.chips.c3 .chip b{text-align:center;font-size:12px}
+.gc .err{min-height:0;height:14px;margin:2px 0;font-size:12px;line-height:14px}
+.gc .hint{font-size:11px;margin:5px 0 0}
+.dialw{width:auto;height:100%;max-height:240px;aspect-ratio:1/1;margin:0;position:relative}
+.dialw::after{inset:11%}
+.needle::before{height:22%;width:5px;margin-left:-2.5px}
+.mid b{font-size:clamp(18px,calc(var(--app-h,800px)*.04),32px)}
+.mid span{font-size:12px}
+.mgrid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:6px;height:100%;max-height:340px;aspect-ratio:1/1;width:auto;max-width:none;margin:0}
+.cell{aspect-ratio:auto;font-size:clamp(14px,3.4dvh,26px);border-radius:10px;min-width:0;min-height:0}
+.rk-box{flex:1;min-height:80px;max-height:300px;height:auto}
+.rk-mult{font-size:clamp(24px,5dvh,40px);top:6px}
+.rk-hist{flex:none;margin-bottom:0;min-height:24px}
+.rk-chip{padding:2px 8px}
+/* кейсы: компактные карточки в 2 колонки */
+.grid{grid-template-columns:repeat(2,1fr);gap:8px}
+.case{padding:10px 8px;border-radius:14px}
+.case .ic{font-size:38px}
+.case h3{font-size:14px;margin:4px 0 0}
+.price{font-size:12px;margin-bottom:8px}
+.case .row button{padding:7px 4px;font-size:12px}
+.tag{font-size:9px;padding:2px 6px;top:6px;right:6px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+/* профиль: компактно */
+#profBox .pcard{display:grid;grid-template-columns:64px 1fr;column-gap:12px;text-align:left;padding:12px;align-items:center;border-radius:14px}
+#profBox .ava{grid-row:1/6;width:64px;height:64px;font-size:28px;margin:0}
+#profBox .bar{max-width:none;margin:4px 0 0}
+#profBox .lvl{justify-self:start;margin:4px 0 0;padding:3px 10px}
+.pname{font-size:18px}
+.stats{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.stat{padding:7px 4px;border-radius:12px}
+.stat b{font-size:15px}.stat span{font-size:10px}
+.pact{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pact button{padding:10px 6px;font-size:13px}
+.pact #resetBtn,.pact .hint{grid-column:1/-1}
+.box{max-height:calc(var(--app-h,100vh)*.92)}
+
+/* ===== узкие экраны (360px): шапка и вкладки целиком ===== */
+header>div:first-child{min-width:0;flex:0 1 auto}
+.logo{font-size:15px}
+.hr{gap:5px;flex:none}
+.bal{padding:4px 8px;gap:5px}
+.bal .v{font-size:15px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coin{width:16px;height:16px}
+.ib{width:42px;height:38px}
+.tabs{gap:3px}
+.tabs button{flex:1 1 auto;padding:8px 4px;font-size:11px;letter-spacing:0}
+.game .msg{height:36px}
+.stat:last-child{grid-column:1/-1}
+@media(max-height:720px){.gc .hint{display:none}}
 </style>
 </head>
 <body>
@@ -140,93 +225,92 @@ textarea:focus{border-color:var(--ac2)}
 <div class="ticker"><div class="tk-track" id="tkTrack"></div></div>
 <header>
   <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">—</b></div></div>
-  <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div><span style="color:var(--mut);font-size:13px">gold</span></div>
+  <div class="hr">
+    <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div></div>
+    <button class="ib gold" id="wdBtn" aria-label="Вывести"><span>💸</span><small>Вывод</small></button>
+    <button class="ib tg" id="contactBtn" aria-label="Связь с создателем"><span>✉️</span><small>Связь</small></button>
+  </div>
 </header>
-
-<div class="actions">
-  <button class="gold" id="wdBtn">💸 Вывести</button>
-  <button class="tg" id="contactBtn">✈️ Связь с создателем</button>
-</div>
 
 <div class="tabs">
   <button class="on" data-t="case">Case</button>
   <button data-t="upgrade">Upgrade</button>
   <button data-t="mines">Mines</button>
-  <button data-t="rocket">🚀 Rocket</button>
-  <button data-t="top">🏆 Top</button>
+  <button data-t="rocket">Rocket</button>
+  <button data-t="top">Top</button>
   <button data-t="profile">Profile</button>
 </div>
 
+<div id="view">
 <section class="sec on" id="case"><div class="grid" id="cases"></div></section>
 
-<section class="sec" id="upgrade"><div class="up">
-  <div class="panel">
-    <div class="dialw"><div class="dial" id="dial"></div><div class="needle" id="needle"></div>
-      <div class="mid"><b id="pc">50%</b><span id="mx">x2.00</span></div></div>
-    <div class="msg" id="umsg"></div>
-  </div>
-  <div class="panel">
-    <label>Ставка (gold, только целые, мин. 1)</label>
+<section class="sec game" id="upgrade">
+  <div class="gv"><div class="dialw"><div class="dial" id="dial"></div><div class="needle" id="needle"></div>
+    <div class="mid"><b id="pc">50%</b><span id="mx">x2.00</span></div></div></div>
+  <div class="msg" id="umsg"></div>
+  <div class="gc">
+    <div class="fl">Ставка, gold (целое, мин. 1)</div>
     <div class="f"><input id="bet" inputmode="numeric" value="10">
       <button data-b="half">½</button><button data-b="x2">x2</button><button data-b="max">MAX</button></div>
-    <label>Выбранный шанс (%) — от 0.1 до 75</label>
-    <div class="f"><input id="pct" inputmode="decimal" value="50"></div>
-    <input type="range" id="rng" min="0.1" max="75" step="0.1" value="50">
-    <div class="info"><span>Реальный шанс победы</span><b id="realp">33.33%</b></div>
-    <div class="info"><span>Множитель</span><b id="mul">x2.00</b></div>
-    <div class="info"><span>Комиссия 20%</span><b id="fee">—</b></div>
-    <div class="info"><span>Выигрыш</span><b id="win">20</b></div>
-    <div class="hint" style="margin-top:8px">Реальный шанс победы в 1,5 раза ниже выбранного. С выигрыша удерживается комиссия 20%.</div>
+    <div class="fl">Выбранный шанс, % (от 0.1 до 75)</div>
+    <div class="f"><input id="pct" inputmode="decimal" value="50" style="flex:0 0 78px"><input type="range" id="rng" min="0.1" max="75" step="0.1" value="50"></div>
+    <div class="chips">
+      <div class="chip"><span>Шанс победы</span><b id="realp">33.33%</b></div>
+      <div class="chip"><span>Множитель</span><b id="mul">x2.00</b></div>
+      <div class="chip"><span>Комиссия</span><b id="fee">—</b></div>
+      <div class="chip"><span>Выигрыш</span><b id="win">20</b></div>
+    </div>
+    <div class="hint">Реальный шанс победы в 1,5 раза ниже выбранного · с выигрыша комиссия 20%</div>
     <div class="err" id="uerr"></div>
-    <button class="pri" id="go" style="width:100%;margin-top:8px;padding:14px;font-size:17px">Апгрейд</button>
+    <button class="pri" id="go" style="width:100%;padding:11px;font-size:16px">Апгрейд</button>
   </div>
-</div></section>
+</section>
 
-<section class="sec" id="mines"><div class="up">
-  <div class="panel">
-    <div class="mgrid" id="mgrid"></div>
-    <div class="msg" id="mmsg"></div>
-  </div>
-  <div class="panel">
-    <label>Ставка (gold, только целые, мин. 1)</label>
+<section class="sec game" id="mines">
+  <div class="gv"><div class="mgrid" id="mgrid"></div></div>
+  <div class="msg" id="mmsg"></div>
+  <div class="gc">
+    <div class="fl">Ставка, gold (целое, мин. 1)</div>
     <div class="f"><input id="mbet" inputmode="numeric" value="10">
       <button data-mb="half">½</button><button data-mb="x2">x2</button><button data-mb="max">MAX</button></div>
-    <label>Количество бомб (от 1 до 24)</label>
-    <div class="step"><button id="bm">−</button><input id="mbomb" inputmode="numeric" value="3"><button id="bp">+</button></div>
-    <input type="range" id="mrng" min="1" max="24" step="1" value="3">
-    <div class="info"><span>Множитель сейчас</span><b id="mcur">x1.00</b></div>
-    <div class="info"><span>Забрать сейчас</span><b id="mcash">0 gold</b></div>
-    <div class="info"><span>Следующая ячейка</span><b id="mnext">—</b></div>
+    <div class="fl">Количество бомб (от 1 до 24)</div>
+    <div class="f"><button id="bm">−</button><input id="mbomb" inputmode="numeric" value="3" style="flex:0 0 52px;text-align:center"><button id="bp">+</button><input type="range" id="mrng" min="1" max="24" step="1" value="3"></div>
+    <div class="chips c3">
+      <div class="chip"><span>Сейчас</span><b id="mcur">x1.00</b></div>
+      <div class="chip"><span>Забрать</span><b id="mcash">0 gold</b></div>
+      <div class="chip"><span>Следующая</span><b id="mnext">—</b></div>
+    </div>
     <div class="err" id="merr"></div>
-    <button class="pri" id="mstart" style="width:100%;margin-top:8px;padding:14px;font-size:17px">Играть</button>
-    <button class="gold" id="mcashout" style="width:100%;margin-top:8px;padding:14px;font-size:17px" hidden>Забрать</button>
-    <div class="hint" style="margin-top:10px">Ставка списывается при старте. Откройте хотя бы одну ячейку, чтобы забрать выигрыш. Множитель учитывает комиссию 3%.</div>
+    <button class="pri" id="mstart" style="width:100%;padding:11px;font-size:16px">Играть</button>
+    <button class="gold" id="mcashout" style="width:100%;padding:11px;font-size:16px" hidden>Забрать</button>
+    <div class="hint">Откройте хотя бы одну ячейку, чтобы забрать выигрыш · комиссия 3%</div>
   </div>
-</div></section>
+</section>
 
-<section class="sec" id="rocket"><div class="up">
-  <div class="panel">
+<section class="sec game" id="rocket">
+  <div class="gv col">
     <div class="rk-hist" id="rkHist"></div>
     <div class="rk-box"><canvas id="rkCv"></canvas><div class="rk-mult" id="rkMult">x1.00</div></div>
-    <div class="msg" id="rkMsg"></div>
   </div>
-  <div class="panel">
-    <label>Ставка (gold, только целые, мин. 1)</label>
+  <div class="msg" id="rkMsg"></div>
+  <div class="gc">
+    <div class="fl">Ставка, gold (целое, мин. 1)</div>
     <div class="f"><input id="rbet" inputmode="numeric" value="10">
       <button data-rb="half">½</button><button data-rb="x2">x2</button><button data-rb="max">MAX</button></div>
-    <label>Автовывод на множителе x (необязательно, от 1.01)</label>
+    <div class="fl">Автовывод на множителе x (необязательно, от 1.01)</div>
     <div class="f"><input id="rauto" inputmode="decimal" placeholder="например 2.5"></div>
-    <div class="info"><span>Забрать сейчас</span><b id="rkCashNow">0 gold</b></div>
+    <div class="chips"><div class="chip" style="grid-column:1/-1"><span>Забрать сейчас</span><b id="rkCashNow">0 gold</b></div></div>
     <div class="err" id="rkErr"></div>
-    <button class="pri" id="rkStart" style="width:100%;margin-top:8px;padding:14px;font-size:17px">🚀 Запуск</button>
-    <button class="gold" id="rkCashBtn" style="width:100%;margin-top:8px;padding:14px;font-size:17px" hidden>Забрать</button>
-    <div class="hint" style="margin-top:10px">Ракета взрывается в случайный момент. Успейте нажать «Забрать» раньше. Множитель считается с комиссией 5%.</div>
+    <button class="pri" id="rkStart" style="width:100%;padding:11px;font-size:16px">🚀 Запуск</button>
+    <button class="gold" id="rkCashBtn" style="width:100%;padding:11px;font-size:16px" hidden>Забрать</button>
+    <div class="hint">Ракета взрывается в случайный момент · успейте нажать «Забрать» · комиссия 5%</div>
   </div>
-</div></section>
+</section>
 
 <section class="sec" id="top"><div id="topBox"></div></section>
 
 <section class="sec" id="profile"><div id="profBox"></div></section>
+</div>
 </div>
 
 <div id="toast"></div>
@@ -359,6 +443,7 @@ function setTab(t){
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id===t));
   save();
+  const vw=$('view');if(vw)vw.scrollTop=0;
   try{const ab=document.querySelector('.tabs button.on');if(ab&&ab.scrollIntoView)ab.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}
   if(t==='top')loadTop();
   if(t==='rocket')rkRedraw();
@@ -553,8 +638,8 @@ function renderProfile(){
     <div class="stat"><b>${fmt(st.best)}</b><span>Лучший выигрыш</span></div>
     <div class="stat"><b>${fmt(st.cases)}</b><span>Кейсов открыто</span></div>
     <div class="stat"><b>${fmt(st.ups)}</b><span>Апгрейдов</span></div>
-    <div class="stat"><b>${wr}%</b><span>Побед в апгрейде</span></div>
-    <div class="stat"><b>${fmt(st.upWins)}</b><span>Успешных апгрейдов</span></div>
+    <div class="stat"><b>${wr}%</b><span>Винрейт, %</span></div>
+    <div class="stat"><b>${fmt(st.upWins)}</b><span>Побед апгрейда</span></div>
     <div class="stat"><b>${fmt(st.withdrawn)}</b><span>Выведено gold</span></div>
     <div class="stat"><b>${fmt(st.mines)}</b><span>Игр в Mines</span></div>
     <div class="stat"><b>${fmt(st.rockets)}</b><span>Игр в Rocket</span></div>
@@ -1260,6 +1345,10 @@ document.querySelectorAll('[data-rb]').forEach(b=>b.onclick=()=>{
 });
 
 /* ---------- запуск ---------- */
+function setAppH(){document.documentElement.style.setProperty('--app-h',window.innerHeight+'px')}
+setAppH();
+window.addEventListener('resize',()=>{setAppH();try{rkRedraw()}catch(e){}});
+if(tgApp&&tgApp.onEvent)try{tgApp.onEvent('viewportChanged',setAppH)}catch(e){}
 $('bet').value=betSaved;
 $('pct').value=pct;
 $('rng').value=pct;
