@@ -264,7 +264,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
       <div class="chip"><span>Комиссия</span><b id="fee">—</b></div>
       <div class="chip"><span>Выигрыш</span><b id="win">20</b></div>
     </div>
-    <div class="hint">Реальный шанс победы в 1,5 раза ниже выбранного · с выигрыша комиссия 20%</div>
+    <div class="hint">Реальный шанс победы в 1 раза ниже выбранного · с выигрыша комиссия 10%</div>
     <div class="err" id="uerr"></div>
     <button class="pri" id="go" style="width:100%;padding:11px;font-size:16px">Апгрейд</button>
   </div>
@@ -777,7 +777,8 @@ $('modal').onclick=e=>{
 
 /* ---------- апгрейдер ---------- */
 let rot=0,ubusy=false;
-const UP_LUCK=1.5,UP_FEE=0.2; // реальный шанс = выбранный / 1.5; комиссия 20% с выигрыша
+const UP_LUCK=1,UP_FEE=0.1; // реальный шанс = выбранный / 1; комиссия 2
+10% с выигрыша
 const realPct=p=>p/UP_LUCK;
 function upCalc(b,p){
   const gross=Math.floor(b*100/p),fee=Math.floor(gross*UP_FEE);
