@@ -1,4 +1,4 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -218,13 +218,17 @@ header>div:first-child{min-width:0;flex:0 1 auto}
 .game .msg{height:36px}
 .stat:last-child{grid-column:1/-1}
 @media(max-height:720px){.gc .hint{display:none}}
+.gv,.gv.col{position:relative}
+.peek{position:absolute;top:2px;right:2px;width:36px;height:36px;padding:0;border-radius:50%;font-size:17px;background:rgba(124,92,255,.9);z-index:3;box-shadow:0 2px 10px #0008}
+.peek[hidden]{display:none}
+.cell.peekb{border-color:#ff547099;background:#2a1420}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="ticker"><div class="tk-track" id="tkTrack"></div></div>
 <header>
-  <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">--</b></div></div>
+  <div><div class="logo"><b>STANDFADE</b><span>earn</span></div><div class="online">🟢 Онлайн: <b id="onl">—</b></div></div>
   <div class="hr">
     <div class="bal"><i class="coin"></i><div class="v" id="bal">0</div></div>
     <button class="ib gold" id="wdBtn" aria-label="Вывести"><span>💸</span><small>Вывод</small></button>
@@ -245,7 +249,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
 <section class="sec on" id="case"><div class="grid" id="cases"></div></section>
 
 <section class="sec game" id="upgrade">
-  <div class="gv"><div class="dialw"><div class="dial" id="dial"></div><div class="needle" id="needle"></div>
+  <div class="gv"><button class="peek" id="peekUp" hidden aria-label="Увидеть исход">👁</button><div class="dialw"><div class="dial" id="dial"></div><div class="needle" id="needle"></div>
     <div class="mid"><b id="pc">50%</b><span id="mx">x2.00</span></div></div></div>
   <div class="msg" id="umsg"></div>
   <div class="gc">
@@ -257,7 +261,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
     <div class="chips">
       <div class="chip"><span>Шанс победы</span><b id="realp">33.33%</b></div>
       <div class="chip"><span>Множитель</span><b id="mul">x2.00</b></div>
-      <div class="chip"><span>Комиссия</span><b id="fee">--</b></div>
+      <div class="chip"><span>Комиссия</span><b id="fee">—</b></div>
       <div class="chip"><span>Выигрыш</span><b id="win">20</b></div>
     </div>
     <div class="hint">Реальный шанс победы в 1,5 раза ниже выбранного · с выигрыша комиссия 20%</div>
@@ -267,7 +271,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
 </section>
 
 <section class="sec game" id="mines">
-  <div class="gv"><div class="mgrid" id="mgrid"></div></div>
+  <div class="gv"><button class="peek" id="peekMn" hidden aria-label="Увидеть бомбы">👁</button><div class="mgrid" id="mgrid"></div></div>
   <div class="msg" id="mmsg"></div>
   <div class="gc">
     <div class="fl">Ставка, gold (целое, мин. 1)</div>
@@ -278,7 +282,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
     <div class="chips c3">
       <div class="chip"><span>Сейчас</span><b id="mcur">x1.00</b></div>
       <div class="chip"><span>Забрать</span><b id="mcash">0 gold</b></div>
-      <div class="chip"><span>Следующая</span><b id="mnext">--</b></div>
+      <div class="chip"><span>Следующая</span><b id="mnext">—</b></div>
     </div>
     <div class="err" id="merr"></div>
     <button class="pri" id="mstart" style="width:100%;padding:11px;font-size:16px">Играть</button>
@@ -289,6 +293,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
 
 <section class="sec game" id="rocket">
   <div class="gv col">
+    <button class="peek" id="peekRk" hidden aria-label="Увидеть взрыв">👁</button>
     <div class="rk-hist" id="rkHist"></div>
     <div class="rk-box"><canvas id="rkCv"></canvas><div class="rk-mult" id="rkMult">x1.00</div></div>
   </div>
@@ -347,7 +352,7 @@ const KEY='sfe_state_v2'+(tgUser?'_'+tgUser.id:'');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ============ КЕЙСЫ ============
-   price -- цена, v -- сколько gold дает предмет, w -- шанс (в %, сумма = 100) */
+   price — цена, v — сколько gold дает предмет, w — шанс (в %, сумма = 100) */
 /* обычный кейс: 5 предметов, шансы 40/30/20/8/2 %, цены предметов = цена кейса x 0.25 / 0.75 / 1.5 / 4 / 10 */
 const COLS=['#8b90b3','#4db8ff','#7c5cff','#ff6bd6','#ffc83d'];
 const MULT=[0.25,0.75,1.5,4,10],WTS=[40.5,30,20,8,1.5];
@@ -410,7 +415,7 @@ try{
     if(Array.isArray(r.adj))appliedAdj=r.adj.filter(x=>typeof x==='string').slice(-300);
     const kk=r.rk;
     if(kk&&typeof kk==='object'&&Number.isFinite(kk.bet)&&kk.bet>=1&&Number.isFinite(kk.crash)&&kk.crash>=1&&kk.crash<=1000&&Number.isFinite(kk.start))
-      rk={bet:Math.floor(kk.bet),crash:kk.crash,start:kk.start,auto:Number.isFinite(kk.auto)&&kk.auto>=1.01?kk.auto:0,done:!!kk.done,res:kk.res==='win'?'win':'lose',payout:num(kk.payout),mult:Number.isFinite(kk.mult)?kk.mult:0};
+      rk={bet:Math.floor(kk.bet),crash:kk.crash,start:kk.start,auto:Number.isFinite(kk.auto)&&kk.auto>=1.01?kk.auto:0,done:!!kk.done,res:kk.res==='win'?'win':'lose',payout:num(kk.payout),mult:Number.isFinite(kk.mult)?kk.mult:0,peeked:!!kk.peeked};
     if(Array.isArray(r.rkh))rkh=r.rkh.filter(x=>Number.isFinite(x)).slice(-12);
     if(/^\d{1,15}$/.test(String(r.rbet||'')))rbetSaved=String(r.rbet);
     if(typeof r.rauto==='string'&&/^[\d.,]{0,8}$/.test(r.rauto))rautoSaved=r.rauto;
@@ -418,7 +423,7 @@ try{
     if(g&&typeof g==='object'&&Number.isFinite(g.bet)&&g.bet>=1&&Number.isInteger(g.bombs)&&g.bombs>=1&&g.bombs<=24
       &&Array.isArray(g.pos)&&g.pos.length===g.bombs&&g.pos.every(x=>Number.isInteger(x)&&x>=0&&x<25)&&new Set(g.pos).size===g.bombs
       &&Array.isArray(g.open)&&g.open.every(x=>Number.isInteger(x)&&x>=0&&x<25&&!g.pos.includes(x))&&new Set(g.open).size===g.open.length)
-      mg={bet:Math.floor(g.bet),bombs:g.bombs,pos:g.pos,open:g.open,done:!!g.done,hit:Number.isInteger(g.hit)?g.hit:-1};
+      mg={bet:Math.floor(g.bet),bombs:g.bombs,pos:g.pos,open:g.open,done:!!g.done,hit:Number.isInteger(g.hit)?g.hit:-1,peeked:!!g.peeked};
     if(r.st&&typeof r.st==='object'){
       st.cases=num(r.st.cases);st.ups=num(r.st.ups);st.upWins=num(r.st.upWins);
       st.best=num(r.st.best);st.mines=num(r.st.mines);st.rockets=num(r.st.rockets);st.added=num(r.st.added);st.withdrawn=num(r.st.withdrawn);
@@ -534,7 +539,7 @@ function wdLost(){ // сервер не знает про заявку (напр
 }
 function wdForm(){
   show(`<h3 style="margin-top:0">💸 Вывод gold</h3>
-  <p style="color:var(--mut);margin:0 0 4px">Минимальный вывод -- ${fmt(MIN_WITHDRAW)} gold.<br>Ваш баланс: <b style="color:var(--ac)">${fmt(bal)}</b></p>
+  <p style="color:var(--mut);margin:0 0 4px">Минимальный вывод — ${fmt(MIN_WITHDRAW)} gold.<br>Ваш баланс: <b style="color:var(--ac)">${fmt(bal)}</b></p>
   <label>Сумма вывода (целое число)</label>
   <input id="wdAmt" inputmode="numeric" placeholder="от ${MIN_WITHDRAW}">
   <div class="err" id="wdErr"></div>
@@ -544,7 +549,7 @@ function wdForm(){
   inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,15);say('')};
   $('wdGo').onclick=async()=>{
     const n=digits(inp.value);
-    if(n<MIN_WITHDRAW){say('Минимум для вывода -- '+fmt(MIN_WITHDRAW)+' gold');return}
+    if(n<MIN_WITHDRAW){say('Минимум для вывода — '+fmt(MIN_WITHDRAW)+' gold');return}
     if(n>bal){say('Недостаточно gold на балансе');return}
     $('wdGo').disabled=true;
     try{
@@ -698,7 +703,7 @@ $('cases').onclick=e=>{
 };
 function viewCase(c){
   const p=pcts(c);
-  show(`<h3 style="margin-top:0">${c.ic} ${c.name} -- ${c.free?'бесплатно':fmt(c.price)+' gold'}</h3>`+
+  show(`<h3 style="margin-top:0">${c.ic} ${c.name} — ${c.free?'бесплатно':fmt(c.price)+' gold'}</h3>`+
   (c.free?`<p style="color:var(--mut);margin:0">Можно открывать раз в 24 часа.</p>`:'')+
   c.items.map((i,k)=>`<div class="item" style="--c:${i.c}"><span class="e">${itemImg(i.v,44)}</span><span class="n">Gold</span>
   <span class="p">${fmt(i.v)} gold<i>${+p[k].toFixed(2)}%</i></span></div>`).join('')+
@@ -772,7 +777,7 @@ $('modal').onclick=e=>{
 
 /* ---------- апгрейдер ---------- */
 let rot=0,ubusy=false;
-const UP_LUCK=1.0,UP_FEE=0.1; // реальный шанс = выбранный / 1; комиссия 10% с выигрыша
+const UP_LUCK=1.5,UP_FEE=0.2; // реальный шанс = выбранный / 1.5; комиссия 20% с выигрыша
 const realPct=p=>p/UP_LUCK;
 function upCalc(b,p){
   const gross=Math.floor(b*100/p),fee=Math.floor(gross*UP_FEE);
@@ -794,14 +799,14 @@ function drawDial(){
 function refresh(){
   const b=getBet();
   let err='';
-  if(b<1)err='Минимальная ставка -- 1 gold';
+  if(b<1)err='Минимальная ставка — 1 gold';
   else if(b>bal)err='Ставка больше баланса';
   $('uerr').textContent=ubusy?'':err;
   $('mul').textContent='x'+(100/pct).toFixed(2);
   $('realp').textContent=(+realPct(pct).toFixed(2))+'%';
   const uc=upCalc(Math.max(1,b),pct);
-  $('fee').textContent=b>=1?'−'+fmt(uc.fee)+' gold':'--';
-  $('win').textContent=b>=1?fmt(uc.net)+' gold':'--';
+  $('fee').textContent=b>=1?'−'+fmt(uc.fee)+' gold':'—';
+  $('win').textContent=b>=1?fmt(uc.net)+' gold':'—';
   $('go').disabled=ubusy||busy||!!err;
   mRefresh();rkRefresh();
 }
@@ -836,7 +841,7 @@ $('go').onclick=()=>{
   lockUp(true);
   $('go').disabled=true;
   $('umsg').textContent='';$('umsg').className='msg';
-  const rp=realPct(pct),ok=Math.random()*100<rp,d=rp*3.6,curPct=pct;
+  const rp=realPct(pct),ok=upRoll<rp,d=rp*3.6,curPct=pct,peeked=upPeek;upRoll=Math.random()*100;upPeek=false;
   const payout=ok?calcWin(b,curPct):0;
   pend=payout;
   st.ups++;
@@ -852,9 +857,9 @@ $('go').onclick=()=>{
       st.upWins++;
       if(payout>st.best)st.best=payout;
       setBal(bal+payout);
-      feedPost('upgrade',payout);
+      if(!peeked)feedPost('upgrade',payout);
       $('umsg').className='msg w';
-      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 10%)`;
+      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 20%)`;
     }else{
       setBal(bal);
       $('umsg').className='msg l';
@@ -873,7 +878,7 @@ function mBombs(){const v=digits($('mbomb').value);return Math.min(24,Math.max(1
 function mSetBombs(v){v=Math.min(24,Math.max(1,v));$('mbomb').value=v;$('mrng').value=v;mInfo();save()}
 function mRefresh(){
   const b=mBet(),act=mActive();let err='';
-  if(!act){if(b<1)err='Минимальная ставка -- 1 gold';else if(b>bal)err='Ставка больше баланса'}
+  if(!act){if(b<1)err='Минимальная ставка — 1 gold';else if(b>bal)err='Ставка больше баланса'}
   $('merr').textContent=err;
   $('mstart').disabled=act||busy||!!err;
 }
@@ -883,6 +888,7 @@ function mDraw(){
     const op=mg&&mg.open.includes(i),bomb=mg&&mg.pos.includes(i);
     let cls='cell',inner='';
     if(op){cls+=' safe';inner=`<img class="gi" src="${IMG_SMALL}" alt="gold">`}
+    else if(act&&minePeek&&bomb){cls+=' peekb';inner='<span style="opacity:.65">💣</span>'}
     else if(mg&&mg.done&&bomb){cls+=mg.hit===i?' bomb hit':' bomb dim';inner=mg.hit===i?'💥':'💣'}
     else if(mg&&mg.done){cls+=' dim'}
     h+=`<button class="${cls}" data-i="${i}" ${act?'':'disabled'}>${inner}</button>`;
@@ -895,7 +901,7 @@ function mInfo(){
     const cur=mMult(mg.bombs,k),cash=k?mPay(mg.bet,mg.bombs,k):0,left=MN-mg.bombs-k;
     $('mcur').textContent='x'+cur.toFixed(2);
     $('mcash').textContent=fmt(cash)+' gold';
-    $('mnext').textContent=left>0?'x'+mMult(mg.bombs,k+1).toFixed(2)+' ('+fmt(mPay(mg.bet,mg.bombs,k+1))+' gold)':'--';
+    $('mnext').textContent=left>0?'x'+mMult(mg.bombs,k+1).toFixed(2)+' ('+fmt(mPay(mg.bet,mg.bombs,k+1))+' gold)':'—';
     $('mcashout').disabled=k===0;
     $('mcashout').textContent=k?'💰 Забрать '+fmt(cash)+' gold (x'+cur.toFixed(2)+')':'Откройте ячейку';
   }else{
@@ -915,7 +921,7 @@ function mStart(){
   if(bet<1||bet>bal)return;
   const idx=[...Array(MN).keys()];
   for(let i=MN-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
-  mg={bet,bombs:b,pos:idx.slice(0,b),open:[],done:false,hit:-1};
+  mg={bet,bombs:b,pos:idx.slice(0,b),open:[],done:false,hit:-1,peeked:false};minePeek=false;
   st.mines++;
   $('mbomb').value=b;$('mrng').value=b;
   $('mmsg').className='msg';
@@ -929,7 +935,7 @@ function mCash(){
   mg.done=true;
   if(pay>st.best)st.best=pay;
   setBal(bal+pay);
-  feedPost('mines',pay);
+  if(!mg.peeked)feedPost('mines',pay);
   $('mmsg').className='msg w';
   $('mmsg').innerHTML=`Победа! +${fmt(pay)} gold<small>Множитель x${mMult(mg.bombs,k).toFixed(2)}</small>`;
   mDraw();mInfo();
@@ -974,7 +980,7 @@ document.querySelectorAll('[data-mb]').forEach(b=>b.onclick=()=>{
 /* ---------- СЕРВЕР: промокоды, бан, админка ---------- */
 const API_BASE='';            // пусто = сервер на том же адресе, что и игра
 const ADMIN_ID=8231559792;    // главный админ (проверка на самом сервере, здесь только для показа кнопки)
-const fmtDate=ts=>ts?new Date(ts).toLocaleString('ru-RU'):'--';
+const fmtDate=ts=>ts?new Date(ts).toLocaleString('ru-RU'):'—';
 let toastT=null;
 function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),4500)}
 async function api(route,body){
@@ -1014,6 +1020,7 @@ async function sync(){
     setBanned(!!r.banned);
     if(Number.isFinite(r.online))$('onl').textContent=r.online;
     if(r.feed)setFeed(r.feed);
+    showPeek(r.isAdmin===true&&!!tgUser&&tgUser.id===ADMIN_ID);
     if(r.adjs&&r.adjs.length)applyAdjs(r.adjs);
   }catch(e){}
   syncing=false;
@@ -1105,7 +1112,7 @@ function adminModal(){
     if(!cur){el.innerHTML='';return}
     el.innerHTML=`<div class="item" style="--c:${cur.banned?'#ff5470':'#38d98a'}"><span class="n">${esc(cur.first_name||'Игрок')}
       <small>${cur.username?'@'+esc(cur.username)+' · ':''}ID ${esc(cur.id)}</small>
-      <small>Баланс (по данным устройства): ${cur.bal==null?'--':fmt(cur.bal)} gold</small>
+      <small>Баланс (по данным устройства): ${cur.bal==null?'—':fmt(cur.bal)} gold</small>
       <small>Был(а) в игре: ${fmtDate(cur.lastSeen)}</small>
       <small>${cur.banned?'⛔ Забанен':'Активен'}${cur.pending?' · ждёт начислений: '+cur.pending:''}</small></span></div>
     <label>Сумма gold (целое число)</label>
@@ -1149,7 +1156,7 @@ async function loadTop(){
     const medal=['🥇','🥈','🥉'];
     box.innerHTML=`<div class="pcard"><h3 style="margin:0 0 4px">🏆 Лидерборд</h3><div class="puser">Топ игроков по балансу gold</div></div>
     <div style="margin-top:12px">${r.top.length?r.top.map((u,i)=>`<div class="item" style="--c:${u.me?'#7c5cff':i<3?'#ffc83d':'#2a2f4d'}"><span class="e" style="font-size:20px;font-weight:900">${medal[i]||(i+1)}</span><span class="n">${esc(u.name)}${u.me?'<small>это вы</small>':''}</span><span class="p">${fmt(u.bal)} gold</span></div>`).join(''):'<div class="puser" style="text-align:center">Пока никого нет</div>'}</div>
-    <div class="item" style="--c:#7c5cff;margin-top:12px"><span class="n">Ваше место<small>из ${fmt(r.me.total)} игроков</small></span><span class="p">${r.me.rank?'#'+r.me.rank:'--'}<i>${fmt(r.me.bal)} gold</i></span></div>
+    <div class="item" style="--c:#7c5cff;margin-top:12px"><span class="n">Ваше место<small>из ${fmt(r.me.total)} игроков</small></span><span class="p">${r.me.rank?'#'+r.me.rank:'—'}<i>${fmt(r.me.bal)} gold</i></span></div>
     <button id="topRef" style="width:100%;margin-top:10px">🔄 Обновить</button>`;
     $('topRef').onclick=loadTop;
   }catch(e){
@@ -1212,7 +1219,7 @@ function rkAuto(){const v=parseFloat(String($('rauto').value).replace(',','.'));
 let rkRaf=0;
 function rkRefresh(){
   const b=rkBet(),act=rkActive();let err='';
-  if(!act){if(b<1)err='Минимальная ставка -- 1 gold';else if(b>bal)err='Ставка больше баланса'}
+  if(!act){if(b<1)err='Минимальная ставка — 1 gold';else if(b>bal)err='Ставка больше баланса'}
   $('rkErr').textContent=err;
   $('rkStart').disabled=act||!!err;
 }
@@ -1285,7 +1292,7 @@ function rkStart(){
   if(rkActive())return;
   const bet=rkBet();
   if(bet<1||bet>bal)return;
-  rk={bet,crash:rkGenCrash(),start:Date.now(),auto:rkAuto(),done:false,res:'',payout:0,mult:0};
+  rk={bet,crash:rkNext,start:Date.now(),auto:rkAuto(),done:false,res:'',payout:0,mult:0,peeked:rkPeekNext};rkNext=rkGenCrash();rkPeekNext=false;
   st.rockets++;
   $('rkMsg').className='msg';
   $('rkMsg').textContent='Ракета взлетает! Заберите выигрыш до взрыва.';
@@ -1306,7 +1313,7 @@ function rkCash(mo){
   rkh.push(rk.crash);rkh=rkh.slice(-12);
   if(pay>st.best)st.best=pay;
   setBal(bal+pay);
-  feedPost('rocket',pay);
+  if(!rk.peeked)feedPost('rocket',pay);
   $('rkMult').textContent='x'+m.toFixed(2);$('rkMult').className='rk-mult ok';
   $('rkMsg').className='msg w';
   $('rkMsg').innerHTML=`Забрали! +${fmt(pay)} gold<small>x${m.toFixed(2)} · ракета взорвалась бы на x${rk.crash.toFixed(2)}</small>`;
@@ -1344,6 +1351,36 @@ document.querySelectorAll('[data-rb]').forEach(b=>b.onclick=()=>{
   rkRefresh();save();
 });
 
+/* ---------- АДМИН: увидеть исход в играх (кроме кейсов) ----------
+   кнопка 👁 показывается только если СЕРВЕР подтвердил по подписи Telegram, что вы админ */
+let isAdminSrv=false,minePeek=false,upRoll=Math.random()*100,upPeek=false,rkNext=rkGenCrash(),rkPeekNext=false;
+function showPeek(on){
+  isAdminSrv=!!on;
+  document.querySelectorAll('.peek').forEach(b=>b.hidden=!on);
+  if(!on&&minePeek){minePeek=false;mDraw()}
+}
+$('peekUp').onclick=()=>{
+  if(!isAdminSrv||ubusy)return;
+  upPeek=true;
+  const rp=realPct(pct),win=upRoll<rp;
+  $('umsg').className='msg '+(win?'w':'l');
+  $('umsg').innerHTML=`👁 Следующий апгрейд: ${win?'ПОБЕДА':'ПРОИГРЫШ'}<small>число ${upRoll.toFixed(2)} · победа, если меньше ${rp.toFixed(2)}</small>`;
+};
+$('peekMn').onclick=()=>{
+  if(!isAdminSrv)return;
+  if(!mActive()){toast('Начните игру, чтобы увидеть бомбы');return}
+  minePeek=!minePeek;
+  if(minePeek)mg.peeked=true;
+  mDraw();save();
+};
+$('peekRk').onclick=()=>{
+  if(!isAdminSrv)return;
+  let c;
+  if(rkActive()){c=rk.crash;rk.peeked=true;save()}else{c=rkNext;rkPeekNext=true}
+  $('rkMsg').className='msg';
+  $('rkMsg').innerHTML=`👁 ${rkActive()?'Взрыв':'Следующий взрыв'} на x${c.toFixed(2)}`;
+};
+
 /* ---------- запуск ---------- */
 function setAppH(){document.documentElement.style.setProperty('--app-h',window.innerHeight+'px')}
 setAppH();
@@ -1371,4 +1408,4 @@ if(pend>0){
 sync();
 </script>
 </body>
-</html>l
+</html>
