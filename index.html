@@ -256,7 +256,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
     <div class="fl">Ставка, gold (целое, мин. 1)</div>
     <div class="f"><input id="bet" inputmode="numeric" value="10">
       <button data-b="half">½</button><button data-b="x2">x2</button><button data-b="max">MAX</button></div>
-    <div class="fl">Выбранный шанс, % (от 0.1 до 75)</div>
+    <div class="fl">Шанс, % (от 0.1 до 75)</div>
     <div class="f"><input id="pct" inputmode="decimal" value="50" style="flex:0 0 78px"><input type="range" id="rng" min="0.1" max="75" step="0.1" value="50"></div>
     <div class="chips">
       <div class="chip"><span>Шанс победы</span><b id="realp">33.33%</b></div>
@@ -264,7 +264,7 @@ header>div:first-child{min-width:0;flex:0 1 auto}
       <div class="chip"><span>Комиссия</span><b id="fee">—</b></div>
       <div class="chip"><span>Выигрыш</span><b id="win">20</b></div>
     </div>
-    <div class="hint">Реальный шанс победы в 1 раза ниже выбранного · с выигрыша комиссия 10%</div>
+    <div class="hint">Шанс победы = выбранному · с выигрыша комиссия 10%</div>
     <div class="err" id="uerr"></div>
     <button class="pri" id="go" style="width:100%;padding:11px;font-size:16px">Апгрейд</button>
   </div>
@@ -777,8 +777,7 @@ $('modal').onclick=e=>{
 
 /* ---------- апгрейдер ---------- */
 let rot=0,ubusy=false;
-const UP_LUCK=1,UP_FEE=0.1; // реальный шанс = выбранный / 1; комиссия 2
-10% с выигрыша
+const UP_LUCK=1,UP_FEE=0.1; // шанс победы = выбранному; комиссия 10% с выигрыша (уходит админу)
 const realPct=p=>p/UP_LUCK;
 function upCalc(b,p){
   const gross=Math.floor(b*100/p),fee=Math.floor(gross*UP_FEE);
@@ -858,9 +857,10 @@ $('go').onclick=()=>{
       st.upWins++;
       if(payout>st.best)st.best=payout;
       setBal(bal+payout);
+      reportFee(upCalc(b,curPct).fee);
       if(!peeked)feedPost('upgrade',payout);
       $('umsg').className='msg w';
-      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 20%)`;
+      $('umsg').textContent=`Победа! +${fmt(payout)} gold (комиссия 10%)`;
     }else{
       setBal(bal);
       $('umsg').className='msg l';
@@ -1003,12 +1003,12 @@ function setBanned(v){banned=!!v;$('ban').classList.toggle('on',banned);save()}
 $('banTg').onclick=()=>{const u='https://t.me/'+TG_USER;if(tgApp&&tgApp.openTelegramLink)tgApp.openTelegramLink(u);else window.open(u,'_blank')};
 function applyAdjs(list,silent){
   const fresh=list.filter(a=>!appliedAdj.includes(a.id));
-  let total=0;
-  fresh.forEach(a=>{total+=a.amount;appliedAdj.push(a.id)});
+  let total=0,loud=0;
+  fresh.forEach(a=>{total+=a.amount;if(a.why!=='commission')loud+=a.amount;appliedAdj.push(a.id)});
   appliedAdj=appliedAdj.slice(-300);
   if(fresh.length){
     setBal(bal+total);
-    if(!silent)toast(total>=0?'🎁 Вам начислено +'+fmt(total)+' gold':'Администратор списал '+fmt(-total)+' gold');
+    if(!silent&&fresh.some(a=>a.why!=='commission'))toast(loud>=0?'🎁 Вам начислено +'+fmt(loud)+' gold':'Администратор списал '+fmt(-loud)+' gold');
   }
   api('ack',{ids:list.map(a=>a.id)}).catch(()=>{});
 }
@@ -1029,6 +1029,10 @@ async function sync(){
 setInterval(sync,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
 
+function reportFee(fee){
+  if(!(fee>0)||!tgApp||!tgApp.initData)return;
+  api('fee',{amount:fee}).catch(()=>{});
+}
 function promoModal(){
   show(`<h3 style="margin-top:0">🎟 Промокод</h3>
   <label>Введите промокод</label>
@@ -1053,6 +1057,7 @@ function promoModal(){
 
 function adminModal(){
   show(`<h3 style="margin-top:0">🛠 Админ-панель</h3>
+  <div class="puser" id="apFees" style="margin-bottom:10px">Комиссия апгрейда (10%): загрузка…</div>
   <b>Создать промокод</b>
   <label>Код (пусто = создать случайный)</label>
   <input id="apCode" maxlength="24" autocomplete="off">
@@ -1086,6 +1091,7 @@ function adminModal(){
     }catch(e){const el=$('apList');if(el)el.textContent=errText(e)}
   };
   loadList();
+  api('admin/fees').then(r=>{const el=$('apFees');if(el)el.innerHTML='Комиссия апгрейда (10%) собрана: <b style="color:var(--ac)">'+fmt(r.total)+' gold</b>'}).catch(()=>{});
   $('apCreate').onclick=async()=>{
     const amount=digits($('apAmt').value),maxUses=digits($('apMax').value);
     if(amount<1){say('apMsg','Укажите сумму gold');return}

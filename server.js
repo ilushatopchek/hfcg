@@ -23,10 +23,10 @@ const INDEX = path.join(__dirname, 'index.html');
 if (!BOT_TOKEN) console.warn('ВНИМАНИЕ: не задан BOT_TOKEN. Промокоды и админка работать не будут.');
 
 /* ---------- простая база в файле ---------- */
-let db = { users: {}, promos: {}, withdrawals: {}, feed: [] };
+let db = { users: {}, promos: {}, withdrawals: {}, feed: [], fees: { pending: 0, total: 0 } };
 try {
   const d = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  if (d && typeof d === 'object') db = { users: d.users || {}, promos: d.promos || {}, withdrawals: d.withdrawals || {}, feed: Array.isArray(d.feed) ? d.feed : [] };
+  if (d && typeof d === 'object') db = { users: d.users || {}, promos: d.promos || {}, withdrawals: d.withdrawals || {}, feed: Array.isArray(d.feed) ? d.feed : [], fees: (d.fees && Number.isFinite(d.fees.pending) && Number.isFinite(d.fees.total)) ? d.fees : { pending: 0, total: 0 } };
 } catch (e) {}
 let saveTimer = null;
 function save() {
@@ -192,11 +192,28 @@ async function handleApi(req, res, route) {
 
   switch (route) {
     case 'me':
+      // комиссия апгрейда (10%) начисляется админу золотом при его заходе в игру
+      if (isAdmin && db.fees.pending > 0) {
+        me.adjs.push({ id: rid(), amount: db.fees.pending, ts: Date.now(), why: 'commission' });
+        db.fees.pending = 0;
+        save();
+      }
       return send(200, { ok: true, banned: !!me.banned, adjs: me.adjs, isAdmin, online: countOnline(), ver: 5, feed: feedList() });
 
     case 'ack': {
       const ids = Array.isArray(body.ids) ? body.ids.map(String) : [];
       me.adjs = me.adjs.filter(a => !ids.includes(a.id));
+      save();
+      return send(200, { ok: true });
+    }
+
+    /* ----- комиссия апгрейда: уходит админу ----- */
+    case 'fee': {
+      if (!limit(id, 'fee', 60)) return fail(429, 'rate', 'Слишком много запросов');
+      const amount = Math.trunc(Number(body.amount));
+      if (!Number.isFinite(amount) || amount < 1 || amount > 1e12) return fail(400, 'bad', 'Неверные данные');
+      db.fees.pending += amount;
+      db.fees.total += amount;
       save();
       return send(200, { ok: true });
     }
@@ -317,6 +334,9 @@ async function handleApi(req, res, route) {
     }
 
     /* ----- только для админа ----- */
+    case 'admin/fees':
+      return send(200, { ok: true, total: db.fees.total, pending: db.fees.pending });
+
     case 'admin/promo/create': {
       let code = normCode(body.code) || genCode();
       const amount = Math.trunc(Number(body.amount));
