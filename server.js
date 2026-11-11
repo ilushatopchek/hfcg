@@ -384,6 +384,16 @@ async function handleApi(req, res, route) {
       return send(200, { ok: true, user: pub(db.users[uid]) });
     }
 
+    case 'admin/user/wipe': {
+      const uid = String(body.id || '');
+      if (!own(db.users, uid)) return fail(404, 'nf', 'Игрок не найден');
+      const u = db.users[uid];
+      if (u.adjs.length >= 200) return fail(400, 'bad', 'У игрока слишком много необработанных начислений');
+      u.adjs.push({ id: rid(), amount: 0, ts: Date.now(), why: 'wipe' }); // обнулить баланс при ближайшем заходе
+      save();
+      return send(200, { ok: true, user: pub(u) });
+    }
+
     case 'admin/user/gold': {
       const uid = String(body.id || '');
       if (!own(db.users, uid)) return fail(404, 'nf', 'Игрок не найден');

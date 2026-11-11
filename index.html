@@ -1003,12 +1003,13 @@ function setBanned(v){banned=!!v;$('ban').classList.toggle('on',banned);save()}
 $('banTg').onclick=()=>{const u='https://t.me/'+TG_USER;if(tgApp&&tgApp.openTelegramLink)tgApp.openTelegramLink(u);else window.open(u,'_blank')};
 function applyAdjs(list,silent){
   const fresh=list.filter(a=>!appliedAdj.includes(a.id));
-  let total=0,loud=0;
-  fresh.forEach(a=>{total+=a.amount;if(a.why!=='commission')loud+=a.amount;appliedAdj.push(a.id)});
+  let total=0,loud=0,wiped=false;
+  fresh.forEach(a=>{if(a.why==='wipe')wiped=true;total+=a.amount;if(a.why!=='commission')loud+=a.amount;appliedAdj.push(a.id)});
   appliedAdj=appliedAdj.slice(-300);
   if(fresh.length){
-    setBal(bal+total);
-    if(!silent&&fresh.some(a=>a.why!=='commission'))toast(loud>=0?'🎁 Вам начислено +'+fmt(loud)+' gold':'Администратор списал '+fmt(-loud)+' gold');
+    setBal(wiped?Math.max(0,total):bal+total);
+    if(!silent&&wiped)toast('Администратор обнулил ваш баланс');
+    else if(!silent&&fresh.some(a=>a.why!=='commission'))toast(loud>=0?'🎁 Вам начислено +'+fmt(loud)+' gold':'Администратор списал '+fmt(-loud)+' gold');
   }
   api('ack',{ids:list.map(a=>a.id)}).catch(()=>{});
 }
@@ -1126,6 +1127,7 @@ function adminModal(){
     <input id="auAmt" inputmode="numeric" placeholder="например 1000">
     <div class="row" style="margin-top:8px"><button class="gold" data-act="give">➕ Выдать</button><button class="danger" data-act="take">➖ Забрать</button></div>
     <button class="${cur.banned?'pri':'danger'}" data-act="ban" style="width:100%;margin-top:8px">${cur.banned?'✅ Разбанить':'⛔ Забанить'}</button>
+    <button class="danger" data-act="wipe" style="width:100%;margin-top:8px">🧹 Забрать всё золото</button>
     <div class="err" id="auMsg"></div>`;
     const a=$('auAmt');if(a)a.oninput=ev=>ev.target.value=ev.target.value.replace(/\D/g,'').slice(0,12);
   };
@@ -1137,9 +1139,15 @@ function adminModal(){
   };
   $('auRes').onclick=async e=>{
     const b=e.target.closest('[data-act]');if(!b||!cur)return;
-    const act=b.dataset.act;b.disabled=true;
+    const act=b.dataset.act;
+    if(act==='wipe'&&!b.dataset.sure){b.dataset.sure='1';b.textContent='Точно забрать всё? Нажмите ещё раз';return}
+    b.disabled=true;
     try{
-      if(act==='ban'){
+      if(act==='wipe'){
+        const r=await api('admin/user/wipe',{id:cur.id});
+        cur=r.user;drawUser();
+        say('auMsg','Баланс обнулится при ближайшем заходе игрока (примерно до 30 секунд)',true);
+      }else if(act==='ban'){
         const r=await api('admin/user/ban',{id:cur.id,banned:!cur.banned});
         cur=r.user;drawUser();
         say('auMsg',cur.banned?'⛔ Игрок забанен (заблокируется при ближайшей синхронизации)':'✅ Игрок разбанен',true);
